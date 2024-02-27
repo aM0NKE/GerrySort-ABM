@@ -25,7 +25,7 @@ class GeoSchellingPoints(mesa.Model):
         # Set up the grid with patches for every NUTS region
         ac = mg.AgentCreator(RegionAgent, model=self)
         regions = ac.from_file(
-            "data/MN_precincts.geojson", unique_id="CONGDIST"
+            "data/MN_precincts_initial.geojson", unique_id="district"
         )
         self.space.add_regions(regions)
 
