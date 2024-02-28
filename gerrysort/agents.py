@@ -36,7 +36,7 @@ class RegionAgent(mg.GeoAgent):
     red_cnt: int
     blue_cnt: int
 
-    def __init__(self, unique_id, model, geometry, crs, init_num_people=5):
+    def __init__(self, unique_id, model, geometry, crs, init_num_people=10):
         super().__init__(unique_id, model, geometry, crs)
         self.init_num_people = init_num_people
         self.red_cnt = 0

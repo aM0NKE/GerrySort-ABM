@@ -16,7 +16,7 @@ class UnhappyElement(mesa.visualization.TextElement):
 
 
 model_params = {
-    "red_percentage": mesa.visualization.Slider("% red", 0.5, 0.00, 1.0, 0.05),
+    # "red_percentage": mesa.visualization.Slider("% red", 0.5, 0.00, 1.0, 0.05),
     "similarity_threshold": mesa.visualization.Slider(
         "% similar wanted", 0.5, 0.00, 1.0, 0.05
     ),
@@ -48,9 +48,15 @@ happy_chart = mesa.visualization.ChartModule(
         {"Label": "happy",   "Color": "Green",},
     ]
 )
+district_chart = mesa.visualization.ChartModule(
+    [
+        {"Label": "red_districts", "Color": "Red"},
+        {"Label": "blue_districts", "Color": "Blue"},
+    ]
+)
 server = mesa.visualization.ModularServer(
     GeoSchellingPoints,
-    [map_element, happy_element, unhappy_element, happy_chart],
+    [map_element, happy_element, unhappy_element, happy_chart, district_chart],
     "Schelling",
     model_params,
 )
