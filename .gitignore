@@ -160,9 +160,10 @@ cython_debug/
 #.idea/
 
 # Folders
-mggg_states/
-__MACOSX/
+data/mggg_states/
 gerrychain_tests/
+*__MACOSX/
 
 # Files
-.DS_Store
+*.DS_Store.env
+.env
