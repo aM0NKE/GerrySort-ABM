@@ -13,8 +13,8 @@ class GeoSchellingPoints(mesa.Model):
     def __init__(self, red_percentage=0.5, similarity_threshold=0.5):
         super().__init__()
 
-        self.initial_plan = gpd.read_file("data/MN_CONGDIST_initial.geojson")
-        self.ensemble = gpd.read_file("data/MN_CONGDIST_ensemble.geojson")
+        self.initial_plan = gpd.read_file("data/MN_test/MN_CONGDIST_initial.geojson")
+        self.ensemble = gpd.read_file("data/MN_test/MN_CONGDIST_ensemble.geojson")
         self.red_percentage = red_percentage
         PersonAgent.SIMILARITY_THRESHOLD = similarity_threshold
 
