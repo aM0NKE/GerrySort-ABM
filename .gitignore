@@ -161,3 +161,8 @@ cython_debug/
 
 # Folders
 mggg_states/
+__MACOSX/
+gerrychain_tests/
+
+# Files
+.DS_Store

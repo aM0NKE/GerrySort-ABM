@@ -39,8 +39,7 @@ happy_element = HappyElement()
 unhappy_element = UnhappyElement()
 
 lat, lon = 46, -94
-
-map_element = mg.visualization.MapModule(schelling_draw, [lat, lon], 8, 1000, 1000)
+map_element = mg.visualization.MapModule(schelling_draw, [lat, lon], 7, 1000, 1000)
 happy_chart = mesa.visualization.ChartModule(
     [
         {"Label": "unhappy", "Color": "Red"},
