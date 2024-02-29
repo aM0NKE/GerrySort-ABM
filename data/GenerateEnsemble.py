@@ -16,12 +16,12 @@ import random
 random.seed(42)
 
 # Select MGGG States file
-input_file = 'data/MN_precincts.geojson'
+input_file = 'MN_precincts.geojson'
 # Set population and district columns
-pop_col = 'TOTPOP'; dist_col = 'MNSENDIST'
+pop_col = 'TOTPOP'; dist_col = 'CONGDIST'
 
 # Set output file
-output_file = 'data/MN_precincts_ensemble.geojson'
+output_file = 'MN_CONGDIST_ensemble.geojson'
 
 # Set ensemble size 
 n = 100

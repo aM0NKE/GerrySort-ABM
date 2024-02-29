@@ -1,5 +1,6 @@
 import mesa
 import mesa_geo as mg
+from shapely.geometry import box
 
 from .agents import PersonAgent, RegionAgent
 from .model import GeoSchellingPoints
@@ -26,12 +27,7 @@ model_params = {
 def schelling_draw(agent):
     portrayal = {}
     if isinstance(agent, RegionAgent):
-        if agent.red_cnt > agent.blue_cnt:
-            portrayal["color"] = "Red"
-        elif agent.red_cnt < agent.blue_cnt:
-            portrayal["color"] = "Blue"
-        else:
-            portrayal["color"] = "Grey"
+        portrayal["color"] = agent.color
     elif isinstance(agent, PersonAgent):
         portrayal["radius"] = 1
         portrayal["shape"] = "circle"
@@ -41,7 +37,10 @@ def schelling_draw(agent):
 
 happy_element = HappyElement()
 unhappy_element = UnhappyElement()
-map_element = mg.visualization.MapModule(schelling_draw, [52, 12], 4)
+
+lat, lon = 46, -94
+
+map_element = mg.visualization.MapModule(schelling_draw, [lat, lon], 8, 1000, 1000)
 happy_chart = mesa.visualization.ChartModule(
     [
         {"Label": "unhappy", "Color": "Red"},
