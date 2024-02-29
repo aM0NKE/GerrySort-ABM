@@ -165,5 +165,4 @@ gerrychain_tests/
 *__MACOSX/
 
 # Files
-*.DS_Store.env
-.env
+*.DS_Store
