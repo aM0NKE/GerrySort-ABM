@@ -10,20 +10,22 @@ from .space import Nuts2Eu
 
 
 class GeoSchellingPoints(mesa.Model):
-    def __init__(self, red_percentage=0.5, similarity_threshold=0.5):
+    def __init__(self, red_percentage=0.5, similarity_threshold=0.5, redistrict=True):
         super().__init__()
 
         self.initial_plan = gpd.read_file("data/MN_test/MN_CONGDIST_initial.geojson")
         self.ensemble = gpd.read_file("data/MN_test/MN_CONGDIST_ensemble.geojson")
         self.red_percentage = red_percentage
         PersonAgent.SIMILARITY_THRESHOLD = similarity_threshold
+        self.redistrict = redistrict
 
         self.schedule = mesa.time.RandomActivation(self)
         self.space = Nuts2Eu()
 
         self.datacollector = mesa.DataCollector(
             {"unhappy": "unhappy", "happy": "happy",
-             "red_districts": "red_districts", "blue_districts": "blue_districts"}
+             "red_districts": "red_districts", "blue_districts": "blue_districts",
+             "efficiency_gap": "efficiency_gap"}
         )
 
         # Set up the grid with patches for every NUTS region
@@ -44,7 +46,6 @@ class GeoSchellingPoints(mesa.Model):
                 )
                 self.space.add_person_to_region(person, region_id=region.unique_id)
                 self.schedule.add(person)
-            region.update_red_blue_counts()
             region.update_color()
             self.schedule.add(region)
         self.datacollector.collect(self)
@@ -77,6 +78,23 @@ class GeoSchellingPoints(mesa.Model):
                 num_blue += 1
         return num_blue
     
+    @property
+    def efficiency_gap(self):
+        total_wasted_votes_red = 0
+        total_wasted_votes_blue = 0
+
+        for region in self.space.agents:
+            if isinstance(region, RegionAgent):
+                red_wasted_votes, blue_wasted_votes = region.calculate_wasted_votes()
+                total_wasted_votes_red += red_wasted_votes
+                total_wasted_votes_blue += blue_wasted_votes
+
+        total_votes = total_wasted_votes_red + total_wasted_votes_blue
+
+        efficiency_gap = abs(total_wasted_votes_red - total_wasted_votes_blue) / total_votes
+
+        return efficiency_gap
+    
     def gerrymander(self):
         ensemble = self.ensemble
         # Select a random plan
@@ -85,7 +103,7 @@ class GeoSchellingPoints(mesa.Model):
         new_districts = ensemble[ensemble['plan'] == plan_n].to_crs(self.space.crs)
         # Get region agents
         curr_districts = [region for region in self.space.agents if isinstance(region, RegionAgent)]
-        # TODO: Update the boundaries of the districts
+        # Update the boundaries of the districts
         for curr_district in curr_districts:
             new_district = new_districts[new_districts['district'] == curr_district.unique_id]
             if not new_district.empty:
@@ -95,9 +113,10 @@ class GeoSchellingPoints(mesa.Model):
                 curr_district.update_color()
 
     def step(self):
-        self.gerrymander()
         self.schedule.step()
         self.datacollector.collect(self)
 
+        # Only gerrymander when sorting has converged
         if not self.unhappy:
-            self.running = False
+            if self.redistrict: 
+                self.gerrymander()

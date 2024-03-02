@@ -18,9 +18,8 @@ class UnhappyElement(mesa.visualization.TextElement):
 
 model_params = {
     # "red_percentage": mesa.visualization.Slider("% red", 0.5, 0.00, 1.0, 0.05),
-    "similarity_threshold": mesa.visualization.Slider(
-        "% similar wanted", 0.5, 0.00, 1.0, 0.05
-    ),
+    "similarity_threshold": mesa.visualization.Slider("Tolarence Threshold", 0.5, 0.00, 1.0, 0.05),
+    "redistrict": mesa.visualization.Checkbox("Redistrict", True)
 }
 
 
@@ -38,23 +37,28 @@ def schelling_draw(agent):
 happy_element = HappyElement()
 unhappy_element = UnhappyElement()
 
-lat, lon = 46, -94
-map_element = mg.visualization.MapModule(schelling_draw, [lat, lon], 7, 1000, 1000)
+lat, lon = 46.5, -93.5
+map_element = mg.visualization.MapModule(schelling_draw, [lat, lon], 7, 850, 850)
 happy_chart = mesa.visualization.ChartModule(
     [
         {"Label": "unhappy", "Color": "Red"},
         {"Label": "happy",   "Color": "Green",},
     ]
 )
-district_chart = mesa.visualization.ChartModule(
+seat_share_chart = mesa.visualization.ChartModule(
     [
         {"Label": "red_districts", "Color": "Red"},
         {"Label": "blue_districts", "Color": "Blue"},
     ]
 )
+efficiency_gap_chart = mesa.visualization.ChartModule(
+    [
+        {"Label": "efficiency_gap", "Color": "Black"},
+    ]
+)
 server = mesa.visualization.ModularServer(
     GeoSchellingPoints,
-    [map_element, happy_element, unhappy_element, happy_chart, district_chart],
+    [map_element, happy_element, unhappy_element, efficiency_gap_chart, seat_share_chart, happy_chart],
     "Schelling",
     model_params,
 )

@@ -3,6 +3,7 @@ import random
 import mesa_geo as mg
 from shapely.geometry import Point, Polygon, MultiPolygon
 import geopandas as gpd
+import math
 
 
 class PersonAgent(mg.GeoAgent):
@@ -36,6 +37,8 @@ class RegionAgent(mg.GeoAgent):
     init_num_people: int
     red_cnt: int
     blue_cnt: int
+    color: str
+    red_pct: float
 
     def __init__(self, unique_id, model, geometry, crs, init_num_people=10):
         super().__init__(unique_id, model, geometry, crs)
@@ -50,9 +53,10 @@ class RegionAgent(mg.GeoAgent):
             return 0
         elif self.blue_cnt == 0:
             return 1
+        elif self.red_cnt == 0 and self.blue_cnt == 0:
+            return 0.5
         else:
-            try: return self.red_cnt / (self.red_cnt + self.blue_cnt)
-            except: return 0
+            return self.red_cnt / (self.red_cnt + self.blue_cnt)
 
     def random_point(self):
         min_x, min_y, max_x, max_y = self.geometry.bounds
@@ -76,15 +80,33 @@ class RegionAgent(mg.GeoAgent):
         else:
             self.blue_cnt -= 1
 
+    def calculate_wasted_votes(self):
+        red_wasted_votes = 0
+        blue_wasted_votes = 0
+        
+        if self.red_pct > 0.5:
+            red_wasted_votes = self.red_cnt - math.ceil((self.red_cnt + self.blue_cnt) / 2)
+            blue_wasted_votes = self.blue_cnt
+
+        elif self.red_pct < 0.5:
+            red_wasted_votes = self.red_cnt
+            blue_wasted_votes = self.blue_cnt - math.ceil((self.red_cnt + self.blue_cnt) / 2)
+        
+        return red_wasted_votes, blue_wasted_votes
+
     def update_red_blue_counts(self):
         # Reset red and blue counts
         self.red_cnt = 0
         self.blue_cnt = 0
 
-        # Update the red and blue counts based on the new geometry
+        # Update the red and blue counts after redistricting
         for person in self.model.space.agents:
             if isinstance(person, PersonAgent) and self.geometry.contains(person.geometry):
+                total_cnt += 1
+                # Add the person to the region
                 self.add_person(person)
+                # Update person reigon_id
+                person.region_id = self.unique_id
     
     def update_color(self):
         # Update the color based on the majority of red or blue PersonAgents
