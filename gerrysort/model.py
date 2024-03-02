@@ -24,13 +24,15 @@ class GeoSchellingPoints(mesa.Model):
 
         self.datacollector = mesa.DataCollector(
             {"unhappy": "unhappy", "happy": "happy",
-             "red_districts": "red_districts", "blue_districts": "blue_districts",
-             "efficiency_gap": "efficiency_gap"}
+             "red_districts": "red_districts", "blue_districts": "blue_districts", "tied_districts": "tied_districts",
+             "efficiency_gap": "efficiency_gap",
+             "control": "control"}
         )
 
         # Set up the grid with patches for every NUTS region
         ac = mg.AgentCreator(RegionAgent, model=self)
         regions = ac.from_GeoDataFrame(self.initial_plan, unique_id="district")
+        self.n_regions = len(regions)
         self.space.add_regions(regions)
 
         for region in regions:
@@ -79,6 +81,20 @@ class GeoSchellingPoints(mesa.Model):
         return num_blue
     
     @property
+    def tied_districts(self):
+        return self.n_regions - self.red_districts - self.blue_districts
+
+    @property
+    def control(self):
+        # Return the party with the most districts or tie
+        if self.red_districts > self.blue_districts:
+            return "Red"
+        elif self.red_districts < self.blue_districts:
+            return "Blue"
+        else:
+            return "Tie"
+        
+    @property
     def efficiency_gap(self):
         total_wasted_votes_red = 0
         total_wasted_votes_blue = 0
@@ -113,7 +129,13 @@ class GeoSchellingPoints(mesa.Model):
                 curr_district.update_color()
 
     def step(self):
+        # Agents move randomly
         self.schedule.step()
+        # Update the color of the regions
+        for region in self.space.agents:
+            if isinstance(region, RegionAgent):
+                region.update_color()
+        # Collect data
         self.datacollector.collect(self)
 
         # Only gerrymander when sorting has converged

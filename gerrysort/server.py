@@ -14,6 +14,10 @@ class HappyElement(mesa.visualization.TextElement):
 class UnhappyElement(mesa.visualization.TextElement):
     def render(self, model):
         return f"Unhappy agents: {model.unhappy}"
+    
+class ControlElement(mesa.visualization.TextElement):
+    def render(self, model):
+        return f"Control: {model.control}"
 
 
 model_params = {
@@ -36,6 +40,7 @@ def schelling_draw(agent):
 
 happy_element = HappyElement()
 unhappy_element = UnhappyElement()
+control_element = ControlElement()
 
 lat, lon = 46.5, -93.5
 map_element = mg.visualization.MapModule(schelling_draw, [lat, lon], 7, 850, 850)
@@ -49,6 +54,7 @@ seat_share_chart = mesa.visualization.ChartModule(
     [
         {"Label": "red_districts", "Color": "Red"},
         {"Label": "blue_districts", "Color": "Blue"},
+        {"Label": "tied_districts", "Color": "Grey"},
     ]
 )
 efficiency_gap_chart = mesa.visualization.ChartModule(
@@ -58,7 +64,7 @@ efficiency_gap_chart = mesa.visualization.ChartModule(
 )
 server = mesa.visualization.ModularServer(
     GeoSchellingPoints,
-    [map_element, happy_element, unhappy_element, efficiency_gap_chart, seat_share_chart, happy_chart],
+    [map_element, control_element, happy_element, unhappy_element, efficiency_gap_chart, seat_share_chart, happy_chart],
     "Schelling",
     model_params,
 )

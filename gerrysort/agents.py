@@ -102,7 +102,6 @@ class RegionAgent(mg.GeoAgent):
         # Update the red and blue counts after redistricting
         for person in self.model.space.agents:
             if isinstance(person, PersonAgent) and self.geometry.contains(person.geometry):
-                total_cnt += 1
                 # Add the person to the region
                 self.add_person(person)
                 # Update person reigon_id
