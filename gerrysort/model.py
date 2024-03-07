@@ -10,14 +10,15 @@ from .space import Nuts2Eu
 
 
 class GeoSchellingPoints(mesa.Model):
-    def __init__(self, red_percentage=0.5, similarity_threshold=0.5, redistrict=True):
+    def __init__(self, red_percentage=0.5, similarity_threshold=0.5, gerrymandering=True):
         super().__init__()
 
         self.initial_plan = gpd.read_file("data/MN_test/MN_CONGDIST_initial.geojson")
         self.ensemble = gpd.read_file("data/MN_test/MN_CONGDIST_ensemble.geojson")
+        self.attempted_plans = []
         self.red_percentage = red_percentage
         PersonAgent.SIMILARITY_THRESHOLD = similarity_threshold
-        self.redistrict = redistrict
+        self.gerrymandering = gerrymandering
 
         self.schedule = mesa.time.RandomActivation(self)
         self.space = Nuts2Eu()
@@ -111,14 +112,13 @@ class GeoSchellingPoints(mesa.Model):
 
         return efficiency_gap
     
-    def gerrymander(self):
-        ensemble = self.ensemble
-        # Select a random plan
-        plan_n = random.choice(ensemble['plan'].unique())
+    def redistrict(self, plan_n):
         # Select the districts in the plan
-        new_districts = ensemble[ensemble['plan'] == plan_n].to_crs(self.space.crs)
-        # Get region agents
+        new_districts = self.ensemble[self.ensemble['plan'] == plan_n].to_crs(self.space.crs)
+
+        # Get current districts
         curr_districts = [region for region in self.space.agents if isinstance(region, RegionAgent)]
+
         # Update the boundaries of the districts
         for curr_district in curr_districts:
             new_district = new_districts[new_districts['district'] == curr_district.unique_id]
@@ -127,18 +127,73 @@ class GeoSchellingPoints(mesa.Model):
                 curr_district.update_geometry(new_geometry)
                 curr_district.update_red_blue_counts()
                 curr_district.update_color()
+    
+    def gerrymander(self):
+        # Sample size of plans
+        sample_size = 10
+
+        # Draw a sample of plans
+        sample = random.sample(list(self.ensemble['plan'].unique()), sample_size)
+
+        # Save the control before gerrymandering
+        control_before = self.control
+        # Save the number of districts favoring the party in control before gerrymandering
+        if control_before == "Red":
+            districts_before = self.red_districts
+        elif control_before == "Blue":
+            districts_before = self.blue_districts
+        else:
+            districts_before = 0
+
+        # If state is tied, do a random redistricting
+        if control_before == 'Tie':
+            self.redistrict(random.choice(self.ensemble['plan'].unique()))
+            print("Random redistricting plan")
+            return
+        
+        # Result dictionary plan|red_districts|blue_districts|tied_districts|efficiency_gap
+        results = {}
+        # Else redistrict to favor the party in control
+        for plan_n in sample:
+            self.redistrict(plan_n)
+            results[plan_n] = {
+                "red_districts": self.red_districts,
+                "blue_districts": self.blue_districts,
+                "tied_districts": self.tied_districts,
+                "efficiency_gap": self.efficiency_gap
+            }
+        # print(control_before)
+        # print(results)
+        # Find the plan that maximizes the number of districts favoring the party in control or efficiency gap
+        if control_before == "Red":
+            best_plan = max(results, key=lambda x: results[x]['red_districts'])
+            # print("Red state, maximizing red districts")
+            # print(f"From {districts_before} to {results[best_plan]['red_districts']}")
+        elif control_before == "Blue":
+            best_plan = max(results, key=lambda x: results[x]['blue_districts'])
+            # print("Blue state, maximizing blue districts")
+            # print(f"From {districts_before} to {results[best_plan]['blue_districts']}")
+        else:
+            best_plan = min(results, key=lambda x: results[x]['efficiency_gap'])
+            # print("Tied state, minimizing efficiency gap")
+            # print(f"From {self.efficiency_gap} to {results[best_plan]['efficiency_gap']}")
+
+        # Redistrict to the best plan
+        self.redistrict(best_plan)
 
     def step(self):
         # Agents move randomly
         self.schedule.step()
-        # Update the color of the regions
+
+        # Update the color of the regions based on population shifts
         for region in self.space.agents:
             if isinstance(region, RegionAgent):
                 region.update_color()
-        # Collect data
-        self.datacollector.collect(self)
-
+                    
         # Only gerrymander when sorting has converged
         if not self.unhappy:
-            if self.redistrict: 
+            if self.gerrymandering: 
                 self.gerrymander()
+
+        # Collect data
+        self.datacollector.collect(self)

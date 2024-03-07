@@ -23,7 +23,7 @@ class ControlElement(mesa.visualization.TextElement):
 model_params = {
     # "red_percentage": mesa.visualization.Slider("% red", 0.5, 0.00, 1.0, 0.05),
     "similarity_threshold": mesa.visualization.Slider("Tolarence Threshold", 0.5, 0.00, 1.0, 0.05),
-    "redistrict": mesa.visualization.Checkbox("Redistrict", True)
+    "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True)
 }
 
 

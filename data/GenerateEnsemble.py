@@ -16,7 +16,7 @@ import random
 random.seed(42)
 
 # Select MGGG States file
-input_file = 'MN_precincts.geojson'
+input_file = 'MN_test/MN_precincts.geojson'
 # Set population and district columns
 pop_col = 'TOTPOP'; dist_col = 'CONGDIST'
 
@@ -24,7 +24,9 @@ pop_col = 'TOTPOP'; dist_col = 'CONGDIST'
 output_file = 'MN_CONGDIST_ensemble.geojson'
 
 # Set ensemble size 
-n = 100
+n = 1000
+
+batch_size = 50
 
 print("Setting up the Markov chain...")
 
@@ -81,10 +83,12 @@ district_data = []
 
 # Run the Markov chain
 print("Running the Markov chain...")
-for i, partition in enumerate(recom_chain.with_progress_bar()):
+batch_results = []
 
+for i, partition in enumerate(recom_chain.with_progress_bar()):
+    
     # Store district plan
-    gdf['plan_{}'.format(i)] = [partition.assignment[n] for n in graph.nodes]
+    gdf[f'plan_{i}'] = [partition.assignment[n] for n in graph.nodes]
 
     # Store district data
     for district_name in partition.perimeter.keys():
@@ -93,37 +97,54 @@ for i, partition in enumerate(recom_chain.with_progress_bar()):
         area = partition.area[district_name]
         exterior_boundaries = partition.exterior_boundaries[district_name]
         interior_boundaries = partition.interior_boundaries[district_name]
-        # boundry_nodes = partition.boundry_nodes[district_name]
-        # cut_edges = partition.cut_edges[district_name]
         cut_edges_by_part = partition.cut_edges_by_part[district_name]
-        district_data.append((i, district_name, population, perimeter, area, exterior_boundaries, interior_boundaries, cut_edges_by_part))
+        batch_results.append((i, district_name, population, perimeter, area, exterior_boundaries, interior_boundaries, cut_edges_by_part))
 
-df = pd.DataFrame(
-    district_data,
-    columns=[
-        'step',
-        'district_name',
-        'population',
-        'perimeter',
-        'area',
-        'exterior_boundaries',
-        'interior_boundaries',
-        'cut_edges_by_part'
-    ]
-)
+    # Process and save results per batch
+    if (i + 1) % batch_size == 0:
+        # Create DataFrame for the batch results
+        batch_df = pd.DataFrame(
+            batch_results,
+            columns=[
+                'step',
+                'district_name',
+                'population',
+                'perimeter',
+                'area',
+                'exterior_boundaries',
+                'interior_boundaries',
+                'cut_edges_by_part'
+            ]
+        )
 
-# Preprocess the gdf to obtain an ensemble of district plans
-print("Processing the results...")
-test_gdf = gdf.copy()
-# Select plans and geometries
-plans = test_gdf[[f'plan_{i}' for i in range(n)] + ['geometry']]
-# Transform df into plan|district|geometry format
-plans = plans.melt(id_vars='geometry', var_name='plan', value_vars=[f'plan_{i}' for i in range(n)], value_name='district')
-# Remove the 'plan_' prefix from the plan names
-plans['plan'] = plans['plan'].str.replace('plan_', '')
-# Dissolve the geometries by plan and district
-dissolved = plans.dissolve(by=['plan', 'district']).reset_index()
+        # Save the batch results to GeoJSON
+        batch_gdf = gdf[[f'plan_{j}' for j in range(i + 1)] + ['geometry']]
+        batch_plans = batch_gdf.melt(id_vars='geometry', var_name='plan', value_vars=[f'plan_{j}' for j in range(i + 1)], value_name='district')
+        batch_plans['plan'] = batch_plans['plan'].str.replace('plan_', '')
+        batch_dissolved = batch_plans.dissolve(by=['plan', 'district']).reset_index()
+        batch_dissolved.to_file(output_file, driver='GeoJSON')
 
-# Save the ensemble to geojson
-print("Saving the results...")
-dissolved.to_file(output_file, driver='GeoJSON')
+        # Clear batch results
+        batch_results = []
+
+# Process and save any remaining results
+if batch_results:
+    final_batch_df = pd.DataFrame(
+        batch_results,
+        columns=[
+            'step',
+            'district_name',
+            'population',
+            'perimeter',
+            'area',
+            'exterior_boundaries',
+            'interior_boundaries',
+            'cut_edges_by_part'
+        ]
+    )
+    
+    final_batch_gdf = gdf[[f'plan_{j}' for j in range(i + 1)] + ['geometry']]
+    final_batch_plans = final_batch_gdf.melt(id_vars='geometry', var_name='plan', value_vars=[f'plan_{j}' for j in range(i + 1)], value_name='district')
+    final_batch_plans['plan'] = final_batch_plans['plan'].str.replace('plan_', '')
+    final_batch_dissolved = final_batch_plans.dissolve(by=['plan', 'district']).reset_index()
+    final_batch_dissolved.to_file(output_file, driver='GeoJSON')
