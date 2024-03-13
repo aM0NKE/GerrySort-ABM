@@ -2,14 +2,13 @@ import mesa
 import mesa_geo as mg
 from shapely.geometry import box
 
-from .agents import PersonAgent, RegionAgent
+from .agents import PersonAgent, DistrictAgent, CountyAgent
 from .model import GeoSchellingPoints
 
 
 class HappyElement(mesa.visualization.TextElement):
     def render(self, model):
         return f"Happy agents: {model.happy}"
-
 
 class UnhappyElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -22,14 +21,18 @@ class ControlElement(mesa.visualization.TextElement):
 
 model_params = {
     # "red_percentage": mesa.visualization.Slider("% red", 0.5, 0.00, 1.0, 0.05),
+    "npop": mesa.visualization.Slider("Number of Agents", 100, 10, 1000, 10),
     "similarity_threshold": mesa.visualization.Slider("Tolarence Threshold", 0.5, 0.00, 1.0, 0.05),
-    "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True)
+    "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
+    "map_sample_size": mesa.visualization.Slider("Map Sample Size", 10, 10, 100, 10),
 }
 
 
 def schelling_draw(agent):
     portrayal = {}
-    if isinstance(agent, RegionAgent):
+    if isinstance(agent, DistrictAgent):
+        portrayal["color"] = agent.color
+    elif isinstance(agent, CountyAgent):
         portrayal["color"] = agent.color
     elif isinstance(agent, PersonAgent):
         portrayal["radius"] = 1

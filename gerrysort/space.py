@@ -3,42 +3,71 @@ from typing import Dict
 
 import mesa_geo as mg
 
-from .agents import RegionAgent
+from .agents import DistrictAgent, CountyAgent
 
 
-class Nuts2Eu(mg.GeoSpace):
-    _id_region_map: Dict[str, RegionAgent]
-    num_people: int
+class ElectoralDistricts(mg.GeoSpace):
+
+    _id_district_map: Dict[str, DistrictAgent]
+    _id_county_map: Dict[str, CountyAgent]
+    county_district_map: Dict[str, str]
 
     def __init__(self):
         super().__init__(warn_crs_conversion=False)
-        self._id_region_map = {}
-        self.num_people = 0
+        self._id_district_map = {}
+        self._id_county_map = {}
 
-    def add_regions(self, agents):
-        super().add_agents(agents)
-        # total_area = 0
-        for agent in agents:
-            self._id_region_map[agent.unique_id] = agent
-            # total_area += agent.SHAPE_AREA
-        # for _, agent in self._id_region_map.items():
-            # agent.SHAPE_AREA = agent.SHAPE_AREA / total_area * 100.0
+    def add_districts(self, districts):
+        # Add districts to the space
+        super().add_agents(districts)
 
-    def add_person_to_region(self, person, region_id):
-        person.region_id = region_id
-        person.geometry = self._id_region_map[region_id].random_point()
-        self._id_region_map[region_id].add_person(person)
+        # Add districts to the id map
+        for agent in districts:
+            if isinstance(agent, DistrictAgent):
+                self._id_district_map[agent.unique_id] = agent
+
+    def add_counties(self, counties):
+        # super().add_agents(counties)
+
+        # Add counties to the id map
+        for agent in counties:
+            if isinstance(agent, CountyAgent):
+                self._id_county_map[agent.unique_id] = agent
+
+    def update_county_to_district_map(self, counties, districts):
+        # Clear the map
+        self.county_district_map = {}
+
+        # Find county to district mapping
+        for county in counties:
+            county_centroid = county.geometry.centroid
+            for district in districts:
+                district = district.to_crs(county.crs)
+                if county_centroid.within(district.geometry):
+                    self.county_district_map[county.unique_id] = district.unique_id
+                    break  # Stop iteration once a match is found
+    
+    def add_person_to_county(self, person, county_id):
+        person.county_id = county_id
+        person.district_id = self.county_district_map[county_id]
+        person.geometry = self._id_county_map[county_id].random_point()
         super().add_agents(person)
-        self.num_people += 1
 
-    def remove_person_from_region(self, person):
-        self._id_region_map[person.region_id].remove_person(person)
-        person.region_id = None
+    def remove_person_from_county(self, person):
+        person.county_id = None
+        person.district_id = None
+        person.geometry = None
         super().remove_agent(person)
-        self.num_people -= 1
 
-    def get_random_region_id(self) -> str:
-        return random.choice(list(self._id_region_map.keys()))
+    def get_random_district_id(self) -> str:
+        return random.choice(list(self._id_district_map.keys()))
 
-    def get_region_by_id(self, region_id) -> RegionAgent:
-        return self._id_region_map.get(region_id)
+    def get_district_by_id(self, district_id) -> DistrictAgent:
+        return self._id_district_map.get(district_id)
+    
+    def get_random_county_id(self) -> str:
+        return random.choice(list(self._id_county_map.keys()))
+    
+    def get_county_by_id(self, county_id) -> CountyAgent:
+        return self._id_county_map.get(county_id)
+    

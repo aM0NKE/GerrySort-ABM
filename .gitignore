@@ -161,7 +161,7 @@ cython_debug/
 
 # Folders
 data/mggg_states/
-gerrychain_tests/
+testing/
 *__MACOSX/
 
 # Files
