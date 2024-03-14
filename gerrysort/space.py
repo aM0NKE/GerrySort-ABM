@@ -52,6 +52,7 @@ class ElectoralDistricts(mg.GeoSpace):
         person.district_id = self.county_district_map[county_id]
         person.geometry = self._id_county_map[county_id].random_point()
         super().add_agents(person)
+        person.update_utility()
 
     def remove_person_from_county(self, person):
         person.county_id = None

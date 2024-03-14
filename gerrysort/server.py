@@ -21,7 +21,7 @@ class ControlElement(mesa.visualization.TextElement):
 
 model_params = {
     # "red_percentage": mesa.visualization.Slider("% red", 0.5, 0.00, 1.0, 0.05),
-    "npop": mesa.visualization.Slider("Number of Agents", 100, 10, 1000, 10),
+    "npop": mesa.visualization.Slider("Number of Agents", 1000, 100, 10000, 100),
     "similarity_threshold": mesa.visualization.Slider("Tolarence Threshold", 0.5, 0.00, 1.0, 0.05),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
     "map_sample_size": mesa.visualization.Slider("Map Sample Size", 10, 10, 100, 10),

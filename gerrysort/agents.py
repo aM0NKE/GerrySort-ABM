@@ -13,6 +13,7 @@ class PersonAgent(mg.GeoAgent):
         self.is_red = is_red
         self.district_id = district_id
         self.county_id = county_id
+        self.utility = 0
 
     @property
     def is_unhappy(self):
@@ -24,10 +25,38 @@ class PersonAgent(mg.GeoAgent):
         else:
             return (
                 1 - self.model.space.get_county_by_id(self.county_id).red_pct
-            ) < self.SIMILARITY_THRESHOLD        
+            ) < self.SIMILARITY_THRESHOLD    
+
+    def update_utility(self, A=1, alpha=(0.5, 0.5)):
+
+        county = self.model.space.get_county_by_id(self.county_id)
+
+        # Party affilliation matching county party majority
+        if self.is_red and county.red_pct > 0.5:
+            X1 = 1
+        elif not self.is_red and county.red_pct < 0.5:
+            X1 = 1
+        else:
+            X1 = 0
+
+        # Urbanicity matching county urbanicity
+        if self.is_red and county.RUCACAT == 'rural':
+            X2 = 1
+        elif self.is_red and county.RUCACAT == 'small_town':
+            X2 = 0.5
+        elif not self.is_red and county.RUCACAT == 'urban':
+            X2 = 1
+        elif not self.is_red and county.RUCACAT == 'large_town':
+            X2 = 0.5
+        else:
+            X2 = 0
+
+        a1, a2 = alpha
+        self.utility = A * (a1 * X1) + (a2 * X2)
 
     def step(self):
-        if self.is_unhappy:
+        self.update_utility()
+        if self.utility < self.SIMILARITY_THRESHOLD:
             random_district_id = self.model.space.get_random_county_id()
             self.model.space.remove_person_from_county(self)
             self.model.space.add_person_to_county(self, county_id=random_district_id)
