@@ -13,7 +13,7 @@ class ElectoralDistricts(mg.GeoSpace):
     county_district_map: Dict[str, str]
 
     def __init__(self):
-        super().__init__(warn_crs_conversion=False)
+        super().__init__(crs=4326, warn_crs_conversion=True)
         self._id_district_map = {}
         self._id_county_map = {}
 

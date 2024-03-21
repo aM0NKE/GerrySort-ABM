@@ -1,6 +1,7 @@
 import random
 import geopandas as gpd
 import uuid
+from math import pi
 
 import mesa
 import mesa_geo as mg
@@ -9,8 +10,8 @@ from .agents import PersonAgent, DistrictAgent, CountyAgent
 from .space import ElectoralDistricts
 
 
-class GeoSchellingPoints(mesa.Model):
-    def __init__(self, similarity_threshold=0.5, gerrymandering=True, npop=1000, map_sample_size=10):
+class GerrySort(mesa.Model):
+    def __init__(self, similarity_threshold=0.5, gerrymandering=True, npop=1000, map_sample_size=10, n_moving_options=10, distance_decay=0.5):
         super().__init__()
 
         # Set up the schedule and space
@@ -18,8 +19,8 @@ class GeoSchellingPoints(mesa.Model):
         self.space = ElectoralDistricts()
 
         # Load the data
-        self.ensemble = gpd.read_file("data/MN_test/MN_CONGDIST_ensemble.geojson").to_crs(self.space.crs)
-        self.initial_plan = gpd.read_file("data/MN_test/MN_CONGDIST_initial.geojson").to_crs(self.space.crs)
+        self.ensemble = gpd.read_file("data/MN_test/MN_STATELEG_ensemble.geojson").to_crs(self.space.crs)
+        self.initial_plan = gpd.read_file("data/MN_test/MN_STATELEG_initial.geojson").to_crs(self.space.crs)
         self.fitness_landscape = gpd.read_file("testing/data/MN_county_ruca_votes.geojson").to_crs(self.space.crs)
         
         # # NOTE: CRS CHECK
@@ -30,9 +31,13 @@ class GeoSchellingPoints(mesa.Model):
 
         # Set parameters
         self.npop = npop
+        self.ndems = 0
+        self.nreps = 0
         PersonAgent.SIMILARITY_THRESHOLD = similarity_threshold
         self.gerrymandering = gerrymandering
         self.map_sample_size = map_sample_size
+        self.n_moving_options = n_moving_options
+        self.distance_decay = distance_decay
 
         # Set up the data collector
         self.datacollector = mesa.DataCollector(
@@ -42,6 +47,8 @@ class GeoSchellingPoints(mesa.Model):
              "blue_districts": "blue_districts", 
              "tied_districts": "tied_districts",
              "efficiency_gap": "efficiency_gap",
+             "mean_median": "mean_median",
+             "declination": "declination",
              "control": "control"}
         )
 
@@ -75,6 +82,8 @@ class GeoSchellingPoints(mesa.Model):
                 )
                 self.space.add_person_to_county(person, county_id=county.unique_id)
                 self.schedule.add(person)
+                if person.is_red: self.nreps += 1
+                else: self.ndems += 1
             # print(person.crs)
             self.schedule.add(county)
             # print(county.crs)
@@ -85,6 +94,9 @@ class GeoSchellingPoints(mesa.Model):
             district.update_district_color()
             self.schedule.add(district)
             # print(district.crs)
+
+        # Keep track of previous control (for gerrymandering)
+        self.prev_control = self.control 
 
         # Collect data
         self.datacollector.collect(self)
@@ -128,32 +140,74 @@ class GeoSchellingPoints(mesa.Model):
         elif self.red_districts < self.blue_districts:
             return "Democratic"
         else:
-            return "Tie"
+            return "Tied"
         
     @property
     def efficiency_gap(self):
+        # Calculate wasted votes
         total_wasted_votes_red = 0
         total_wasted_votes_blue = 0
-
         for agent in self.space.agents:
             if isinstance(agent, DistrictAgent):
                 red_wasted_votes, blue_wasted_votes = agent.calculate_wasted_votes()
                 total_wasted_votes_red += red_wasted_votes
                 total_wasted_votes_blue += blue_wasted_votes
 
-        total_votes = total_wasted_votes_red + total_wasted_votes_blue
-
-        try: efficiency_gap = abs(total_wasted_votes_red - total_wasted_votes_blue) / total_votes
-        except ZeroDivisionError: efficiency_gap = 0
-
+        # Return efficiency gap (npop = total number of votes)
+        efficiency_gap = abs(total_wasted_votes_blue - total_wasted_votes_red) / self.npop
         return efficiency_gap
+    
+    @property
+    def mean_median(self):
+        # Get dem vote shares (1 - red_pct) for each district
+        dem_pct = []
+        for agent in self.space.agents:
+            if isinstance(agent, DistrictAgent):
+                dem_pct.append(1 - agent.red_pct)
+
+        # Sort dem vote shares
+        dem_pct.sort()
+
+        # Calculate mean and median
+        median = dem_pct[len(dem_pct) // 2]
+        mean = sum(dem_pct) / len(dem_pct)
+
+        # Return mean-median difference
+        return mean - median
+    
+    @property
+    def declination(self):
+        # Get districts for Democrats and Republicans
+        rep_districts = [district for district in self.space.agents if isinstance(district, DistrictAgent) and district.red_pct > 0.5]
+        dem_districts = [district for district in self.space.agents if isinstance(district, DistrictAgent) and district.red_pct < 0.5]
+        
+        # Sort districts by dem vote share (1 - red_pct)
+        rep_districts.sort(key=lambda x: 1 - x.red_pct)
+        dem_districts.sort(key=lambda x: 1 - x.red_pct)
+        
+        # Find median dem vote shares (1 - red_pct) and median district number for both districts 
+        median_rep = len(rep_districts) // 2
+        median_dem = len(dem_districts) // 2
+        dem_share_rep = 1 - rep_districts[median_rep].red_pct
+        dem_share_dem = 1 - dem_districts[median_dem].red_pct
+
+        # Find 50-50 point
+        fifty_fifty_point = len(rep_districts) + 0.5
+
+        # Calculate slopes from median districts to fifty-fifty point
+        slope_rep = (0.5 - dem_share_rep) / (fifty_fifty_point - median_rep)
+        slope_dem = (0.5 - dem_share_dem) / (fifty_fifty_point - median_dem)
+
+        # Return declination
+        declination = (2 * (slope_dem - slope_rep)) / pi
+        return declination
     
     def redistrict(self, plan_n):
         # Select the districts in the plan
         new_districts = self.ensemble[self.ensemble['plan'] == plan_n].to_crs(self.space.crs)
 
         # Get current districts
-        curr_districts = [region for region in self.space.agents if isinstance(region, DistrictAgent)]
+        curr_districts = [district for district in self.space.agents if isinstance(district, DistrictAgent)]
 
         # Update the boundaries of the districts
         for curr_district in curr_districts:
@@ -165,50 +219,32 @@ class GeoSchellingPoints(mesa.Model):
                 curr_district.update_district_color()
     
     def gerrymander(self):
-        # Sample size of plans
-        sample_size = 10
-
         # Draw a sample of plans
-        sample = random.sample(list(self.ensemble['plan'].unique()), sample_size)
-
-        # Save the control before gerrymandering
-        control_before = self.control
-        # Save the number of districts favoring the party in control before gerrymandering
-        if control_before == "Red":
-            districts_before = self.red_districts
-        elif control_before == "Blue":
-            districts_before = self.blue_districts
-        else:
-            districts_before = 0
-
-        # If state is tied, do a random redistricting
-        if control_before == 'Tie':
-            self.redistrict(random.choice(self.ensemble['plan'].unique()))
-            print("Random redistricting plan")
-            return
+        sample = random.sample(list(self.ensemble['plan'].unique()), self.map_sample_size)
         
-        # Result dictionary plan|red_districts|blue_districts|tied_districts|efficiency_gap
+        # Evaluate the plans
         results = {}
-        # Else redistrict to favor the party in control
         for plan_n in sample:
             self.redistrict(plan_n)
             results[plan_n] = {
                 "red_districts": self.red_districts,
                 "blue_districts": self.blue_districts,
                 "tied_districts": self.tied_districts,
-                "efficiency_gap": self.efficiency_gap
+                "efficiency_gap": self.efficiency_gap,
+                "mean_median": self.mean_median,
+                "declination": self.declination
             }
-        # print(control_before)
-        # print(results)
-        # Find the plan that maximizes the number of districts favoring the party in control or efficiency gap
-        if control_before == "Red":
+
+        # Find the plan that maximizes the number of districts favoring the party in control
+        if self.prev_control == "Republican":
             best_plan = max(results, key=lambda x: results[x]['red_districts'])
             # print("Red state, maximizing red districts")
             # print(f"From {districts_before} to {results[best_plan]['red_districts']}")
-        elif control_before == "Blue":
+        elif self.prev_control == "Democratic":
             best_plan = max(results, key=lambda x: results[x]['blue_districts'])
             # print("Blue state, maximizing blue districts")
             # print(f"From {districts_before} to {results[best_plan]['blue_districts']}")
+        # or minimizing efficiency gap (in case of tie)
         else:
             best_plan = min(results, key=lambda x: results[x]['efficiency_gap'])
             # print("Tied state, minimizing efficiency gap")
@@ -216,6 +252,9 @@ class GeoSchellingPoints(mesa.Model):
 
         # Redistrict to the best plan
         self.redistrict(best_plan)
+
+        # Keep track controlling party before population shift
+        self.prev_control = self.control
 
     def step(self):
         # Step all types of agents

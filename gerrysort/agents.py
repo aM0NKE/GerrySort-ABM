@@ -3,10 +3,16 @@ import random
 import mesa_geo as mg
 from shapely.geometry import Point, Polygon, MultiPolygon
 import geopandas as gpd
-import math
+from math import radians, sin, cos, sqrt, atan2, ceil
+from geopy.distance import great_circle
 
 
 class PersonAgent(mg.GeoAgent):
+    is_red: bool
+    district_id: str
+    county_id: str
+    utility: float
+    is_unhappy: bool
 
     def __init__(self, unique_id, model, geometry, crs, is_red, district_id, county_id):
         super().__init__(unique_id, model, geometry, crs)
@@ -17,21 +23,11 @@ class PersonAgent(mg.GeoAgent):
 
     @property
     def is_unhappy(self):
-        if self.is_red:
-            return (
-                self.model.space.get_county_by_id(self.county_id).red_pct
-                < self.SIMILARITY_THRESHOLD
-            )
-        else:
-            return (
-                1 - self.model.space.get_county_by_id(self.county_id).red_pct
-            ) < self.SIMILARITY_THRESHOLD    
+        return self.utility < self.SIMILARITY_THRESHOLD
 
-    def update_utility(self, A=1, alpha=(0.5, 0.5)):
-
-        county = self.model.space.get_county_by_id(self.county_id)
-
+    def calculate_utility(self, county_id, A=1, alpha=(1, 1, 1)):
         # Party affilliation matching county party majority
+        county = self.model.space.get_county_by_id(county_id)
         if self.is_red and county.red_pct > 0.5:
             X1 = 1
         elif not self.is_red and county.red_pct < 0.5:
@@ -39,28 +35,60 @@ class PersonAgent(mg.GeoAgent):
         else:
             X1 = 0
 
+        # Party affilliation matching district party majority
+        district = self.model.space.get_district_by_id(self.district_id)
+        if self.is_red and district.red_pct > 0.5:
+            X2 = 1
+        elif not self.is_red and district.red_pct < 0.5:
+            X2 = 1
+        else:
+            X2 = 0.25
+
         # Urbanicity matching county urbanicity
         if self.is_red and county.RUCACAT == 'rural':
-            X2 = 1
+            X3 = 1
         elif self.is_red and county.RUCACAT == 'small_town':
-            X2 = 0.5
+            X3 = 0.5
         elif not self.is_red and county.RUCACAT == 'urban':
-            X2 = 1
+            X3 = 1
         elif not self.is_red and county.RUCACAT == 'large_town':
-            X2 = 0.5
+            X3 = 0.5
         else:
-            X2 = 0
+            X3 = 0
 
-        a1, a2 = alpha
-        self.utility = A * (a1 * X1) + (a2 * X2)
+        # Return utility
+        a1, a2, a3 = alpha
+        utility = A * X1**a1 * X2**a2 * X3**a3
+        return utility
+
+    def update_utility(self):
+        self.utility = self.calculate_utility(self.county_id)
+
+    def sort(self):
+        # Evaluate potential moving options
+        for i in range(self.model.n_moving_options):
+            # Get a random county
+            random_county_id = self.model.space.get_random_county_id()
+            random_county_utility = self.calculate_utility(random_county_id)
+            random_county_centroid = self.model.space.get_county_by_id(random_county_id).geometry.centroid
+            
+            # Calculate distance to random county
+            MAX_DIST = 475 # normalize distance by max distance (MN: 475 miles)
+            distance = great_circle((self.geometry.y, self.geometry.x), (random_county_centroid.y, random_county_centroid.x)).miles / MAX_DIST
+            
+            # Calculate discounted utility
+            discounted_utility =  random_county_utility * (self.model.distance_decay * (1 - distance))
+            
+            # Move if discounted utility is greater than current utility
+            if discounted_utility > self.utility:
+                self.model.space.remove_person_from_county(self)
+                self.model.space.add_person_to_county(self, county_id=random_county_id)
+                break
 
     def step(self):
         self.update_utility()
         if self.utility < self.SIMILARITY_THRESHOLD:
-            random_district_id = self.model.space.get_random_county_id()
-            self.model.space.remove_person_from_county(self)
-            self.model.space.add_person_to_county(self, county_id=random_district_id)
-
+            self.sort()
 
 class CountyAgent(mg.GeoAgent):
     num_people: int
@@ -95,12 +123,13 @@ class CountyAgent(mg.GeoAgent):
 
         for person in self.model.space.agents:
             if isinstance(person, PersonAgent) and self.geometry.contains(person.geometry):
-                
                 self.num_people += 1
                 if person.is_red:
                     self.red_cnt += 1
                 else:
                     self.blue_cnt += 1
+            
+            person.county_id = self.unique_id
 
         try: self.red_pct = self.red_cnt / self.num_people
         except ZeroDivisionError: self.red_pct = 0.5
@@ -138,14 +167,24 @@ class DistrictAgent(mg.GeoAgent):
         blue_wasted_votes = 0
         
         if self.red_pct > 0.5:
-            red_wasted_votes = self.red_cnt - math.ceil((self.red_cnt + self.blue_cnt) / 2)
+            red_wasted_votes = self.red_cnt - ceil((self.red_cnt + self.blue_cnt) / 2)
             blue_wasted_votes = self.blue_cnt
 
         elif self.red_pct < 0.5:
             red_wasted_votes = self.red_cnt
-            blue_wasted_votes = self.blue_cnt - math.ceil((self.red_cnt + self.blue_cnt) / 2)
+            blue_wasted_votes = self.blue_cnt - ceil((self.red_cnt + self.blue_cnt) / 2)
+
+        else:
+            red_wasted_votes = 0
+            blue_wasted_votes = 0
         
         return red_wasted_votes, blue_wasted_votes
+    
+    def update_district_geometry(self, new_geometry):
+        if isinstance(new_geometry, Polygon):
+            new_geometry = MultiPolygon([new_geometry])
+
+        self.geometry = new_geometry
 
     def update_district_data(self):
         self.num_people = 0
@@ -154,7 +193,6 @@ class DistrictAgent(mg.GeoAgent):
 
         for person in self.model.space.agents:
             if isinstance(person, PersonAgent) and self.geometry.contains(person.geometry):
-                
                 self.num_people += 1
                 if person.is_red:
                     self.red_cnt += 1
@@ -170,14 +208,6 @@ class DistrictAgent(mg.GeoAgent):
             self.color = "Blue"
         else:
             self.color = "Grey"
-
-    def update_district_geometry(self, new_geometry):
-        if isinstance(new_geometry, Polygon):
-            # Convert a single Polygon to a MultiPolygon for consistency
-            new_geometry = MultiPolygon([new_geometry])
-
-        # Update the geometry of the districtAgent
-        self.geometry = new_geometry
 
     def step(self):
         self.update_district_data()
