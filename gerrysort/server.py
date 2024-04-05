@@ -25,6 +25,7 @@ model_params = {
     "npop": mesa.visualization.Slider("Number of Agents", 1000, 100, 10000, 100),
     "similarity_threshold": mesa.visualization.Slider("Tolarence Threshold", 0.5, 0.00, 1.0, 0.05),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
+    "max_recomb_steps": mesa.visualization.Slider("Max Recombination Steps", 10, 10, 1000, 10),
     "map_sample_size": mesa.visualization.Slider("Map Sample Size", 10, 10, 100, 10),
     "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 10, 1, 100, 5),
     "distance_decay": mesa.visualization.Slider("Distance Decay", 0.2, 0.00, 1.0, 0.05),

@@ -47,10 +47,11 @@ class ElectoralDistricts(mg.GeoSpace):
                     self.county_district_map[county.unique_id] = district.unique_id
                     break  # Stop iteration once a match is found
     
-    def add_person_to_county(self, person, county_id):
+    def add_person_to_county(self, person, county_id, new_position=None):
         person.county_id = county_id
         person.district_id = self.county_district_map[county_id]
-        person.geometry = self._id_county_map[county_id].random_point()
+        if new_position is None: person.geometry = self._id_county_map[county_id].random_point()
+        else: person.geometry = new_position
         super().add_agents(person)
         person.update_utility()
 

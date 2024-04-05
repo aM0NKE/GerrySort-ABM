@@ -25,7 +25,7 @@ class PersonAgent(mg.GeoAgent):
     def is_unhappy(self):
         return self.utility < self.SIMILARITY_THRESHOLD
 
-    def calculate_utility(self, county_id, A=1, alpha=(1, 1, 1)):
+    def calculate_utility(self, county_id, A=1, alpha=(1, 1, 1, 1)):
         # Party affilliation matching county party majority
         county = self.model.space.get_county_by_id(county_id)
         if self.is_red and county.red_pct > 0.5:
@@ -33,7 +33,7 @@ class PersonAgent(mg.GeoAgent):
         elif not self.is_red and county.red_pct < 0.5:
             X1 = 1
         else:
-            X1 = 0
+            X1 = 0.25
 
         # Party affilliation matching district party majority
         district = self.model.space.get_district_by_id(self.district_id)
@@ -42,7 +42,7 @@ class PersonAgent(mg.GeoAgent):
         elif not self.is_red and district.red_pct < 0.5:
             X2 = 1
         else:
-            X2 = 0.25
+            X2 = 0.5
 
         # Urbanicity matching county urbanicity
         if self.is_red and county.RUCACAT == 'rural':
@@ -54,36 +54,55 @@ class PersonAgent(mg.GeoAgent):
         elif not self.is_red and county.RUCACAT == 'large_town':
             X3 = 0.5
         else:
-            X3 = 0
+            X3 = 0.25
+
+        # Reward/penalize capacity
+        if county.num_people < county.capacity:
+            X4 = 0.25
+        else:
+            X4 = -0.25
 
         # Return utility
-        a1, a2, a3 = alpha
-        utility = A * X1**a1 * X2**a2 * X3**a3
+        a1, a2, a3, a4 = alpha
+        utility = A * X1**a1 * X2**a2 * X3**a3 + X4
         return utility
 
     def update_utility(self):
         self.utility = self.calculate_utility(self.county_id)
+        # print(self.utility)
 
     def sort(self):
+        moving_options = {
+            'county_id': [],
+            'utility': [],
+            'position': []
+        }
+
         # Evaluate potential moving options
         for i in range(self.model.n_moving_options):
             # Get a random county
             random_county_id = self.model.space.get_random_county_id()
-            random_county_utility = self.calculate_utility(random_county_id)
-            random_county_centroid = self.model.space.get_county_by_id(random_county_id).geometry.centroid
-            
-            # Calculate distance to random county
+            random_county = self.model.space.get_county_by_id(random_county_id)
+
+            # Calculate distance to new location
+            new_location = random_county.random_point()
             MAX_DIST = 475 # normalize distance by max distance (MN: 475 miles)
-            distance = great_circle((self.geometry.y, self.geometry.x), (random_county_centroid.y, random_county_centroid.x)).miles / MAX_DIST
+            distance = great_circle((self.geometry.y, self.geometry.x), (new_location.y, new_location.x)).miles / MAX_DIST
             
             # Calculate discounted utility
-            discounted_utility =  random_county_utility * (self.model.distance_decay * (1 - distance))
-            
-            # Move if discounted utility is greater than current utility
-            if discounted_utility > self.utility:
-                self.model.space.remove_person_from_county(self)
-                self.model.space.add_person_to_county(self, county_id=random_county_id)
-                break
+            random_county_utility = self.calculate_utility(random_county_id)
+            discounted_utility = random_county_utility * (self.model.distance_decay * (1 - distance))
+
+            # Store moving options
+            moving_options['county_id'].append(random_county_id)
+            moving_options['position'].append(new_location)
+            moving_options['utility'].append(discounted_utility)
+
+        # Find argmax of discounted utility
+        max_utility_idx = moving_options['utility'].index(max(moving_options['utility']))
+        if moving_options['utility'][max_utility_idx] > self.utility:
+            self.model.space.remove_person_from_county(self)
+            self.model.space.add_person_to_county(self, county_id=moving_options['county_id'][max_utility_idx], new_position=moving_options['position'][max_utility_idx])
 
     def step(self):
         self.update_utility()
@@ -91,6 +110,7 @@ class PersonAgent(mg.GeoAgent):
             self.sort()
 
 class CountyAgent(mg.GeoAgent):
+    capacity: int
     num_people: int
     red_cnt: int
     blue_cnt: int
@@ -100,6 +120,7 @@ class CountyAgent(mg.GeoAgent):
 
     def __init__(self, unique_id, model, geometry, crs):
         super().__init__(unique_id, model, geometry, crs)
+        self.capacity = 0
         self.num_people = 0
         self.red_cnt = 0
         self.blue_cnt = 0
