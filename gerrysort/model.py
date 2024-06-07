@@ -6,6 +6,7 @@ from gerrychain.tree import bipartition_tree
 from gerrychain.constraints import contiguous
 from functools import partial
 
+import numpy as np
 import random
 import geopandas as gpd
 import uuid
@@ -14,12 +15,15 @@ from math import pi, ceil
 import mesa
 import mesa_geo as mg
 
-from .agents import PersonAgent, DistrictAgent, CountyAgent
+from .person import PersonAgent
+from .district import DistrictAgent
+from .county import CountyAgent
 from .space import ElectoralDistricts
+from .redistricting_utils import redistrict, gerrymander
 
 
 class GerrySort(mesa.Model):
-    def __init__(self, similarity_threshold=0.5, gerrymandering=True, max_recomb_steps=10, npop=1000, map_sample_size=10, n_moving_options=10, distance_decay=0.5):
+    def __init__(self, temperature=0.0, gerrymandering=True, sorting=True, npop=1000, n_proposed_maps=10, n_moving_options=10, moving_cooldown=5, distance_decay=0.5):
         super().__init__()
 
         # Set up the schedule and space
@@ -28,57 +32,27 @@ class GerrySort(mesa.Model):
 
         # Load the data
         self.precincts = gpd.read_file("data/MN_test/MN_precincts.geojson")
-        self.ensemble = gpd.read_file("data/MN_test/MN_STATELEG_ensemble.geojson").to_crs(self.space.crs)
-        self.initial_plan = gpd.read_file("data/MN_test/MN_STATELEG_initial.geojson").to_crs(self.space.crs)
+        # self.ensemble = gpd.read_file("data/MN_test/MN_CONGDIST_ensemble.geojson").to_crs(self.space.crs)
+        self.initial_plan = gpd.read_file("data/MN_test/MN_CONGDIST_initial.geojson").to_crs(self.space.crs)
         self.fitness_landscape = gpd.read_file("testing/data/MN_county_ruca_votes_housing_income.geojson").to_crs(self.space.crs)
-        
-        # # NOTE: CRS CHECK
-        # print(self.space.crs)
-        # print(self.ensemble.crs)
-        # print(self.initial_plan.crs)
-        # print(self.fitness_landscape.crs)
+
+        # Check CRS consistency
+        self.check_crs_consistency()
 
         # Set up Gerrychain
-        self.pop_col = "TOTPOP"
-        self.dist_col = "MNSENDIST"
-        self.graph = Graph.from_geodataframe(self.precincts)
-        self.updaters = {
-            "population": updaters.Tally(self.pop_col, alias="population"),
-            "cut_edges": updaters.cut_edges,
-            "perimeter": updaters.perimeter,
-            "area": updaters.Tally("area", alias="area"),
-            "geometry": updaters.boundary_nodes,
-        }
-        self.initial_partition = GeographicPartition(
-            self.graph,
-            assignment=self.dist_col,
-            updaters=self.updaters
-        )
-        self.ideal_population = sum(self.initial_partition["population"].values()) / len(self.initial_partition)
-        self.proposal = partial(
-            recom,
-            pop_col=self.pop_col,
-            pop_target=self.ideal_population,
-            epsilon=0.01,
-            node_repeats=2,
-        )
-        self.max_recomb_steps = max_recomb_steps
-        self.recom_chain = MarkovChain(
-            proposal=self.proposal,
-            constraints=[contiguous],
-            accept=accept.always_accept,
-            initial_state=self.initial_partition,
-            total_steps=self.max_recomb_steps,
-        )
+        self.set_up_gerrychain('TOTPOP', 'CONGDIST', n_proposed_maps)
 
         # Set parameters
         self.npop = npop
         self.ndems = 0
         self.nreps = 0
-        PersonAgent.SIMILARITY_THRESHOLD = similarity_threshold
+
         self.gerrymandering = gerrymandering
-        self.map_sample_size = map_sample_size
+
+        self.sorting = sorting
+        self.temperature = temperature
         self.n_moving_options = n_moving_options
+        self.moving_cooldown = moving_cooldown
         self.distance_decay = distance_decay
 
         # Set up the data collector
@@ -91,51 +65,15 @@ class GerrySort(mesa.Model):
              "efficiency_gap": "efficiency_gap",
              "mean_median": "mean_median",
              "declination": "declination",
-             "control": "control"}
+             "control": "control",
+             "n_moves": "n_moves"}
         )
 
-        # Set op voting districts for simulating gerrymandering/electoral processes
-        ac_d = mg.AgentCreator(DistrictAgent, model=self)
-        self.districts = ac_d.from_GeoDataFrame(self.initial_plan, unique_id="district")
-        self.n_districts = len(self.districts)
-        self.space.add_districts(self.districts)
+        # Create District and County agents
+        self.setup_state('district', 'COUNTY')
 
-        # Set up counties for simulating population shifts
-        ac_c = mg.AgentCreator(CountyAgent, model=self)
-        self.counties = ac_c.from_GeoDataFrame(self.fitness_landscape, unique_id="COUNTY")
-        self.n_counties = len(self.counties)
-        self.space.add_counties(self.counties)
-
-        # Update the county to district map
-        self.space.update_county_to_district_map(self.counties, self.districts)
-
-        total_cap = 0
-        # Add agents to the space per county
-        for county in self.counties:
-            pop_county = ceil(county.TOTPOP_SHR * self.npop)
-            # Lower density > more space
-            county.capacity = ceil(county.CAPACITY_SHR * self.npop)
-            total_cap += county.capacity
-            # print(f'County {county.unique_id} has {pop_county} people and {county.capacity} capacity')
-            for _ in range(pop_county):
-                person = PersonAgent(
-                    unique_id=uuid.uuid4().int,
-                    model=self,
-                    crs=self.space.crs,
-                    geometry=county.random_point(),
-                    is_red=county.PRES16D_SHR < random.random(),
-                    district_id=self.space.county_district_map[county.unique_id],
-                    county_id=county.unique_id,
-                )
-                self.space.add_person_to_county(person, county_id=county.unique_id)
-                self.schedule.add(person)
-                if person.is_red: self.nreps += 1
-                else: self.ndems += 1
-            # print(person.crs)
-            self.schedule.add(county)
-            # print(county.crs)
-
-        # print(f'Total n pop: {self.npop} | Total capacity: {total_cap}')
+        # Create Person agents
+        self.create_people()
 
         # Add districts to the scheduler and update their color
         for district in self.districts:
@@ -161,6 +99,15 @@ class GerrySort(mesa.Model):
     @property
     def happy(self):
         return self.npop - self.unhappy
+    
+    @property 
+    def n_moves(self):
+        n_moves = 0
+        for agent in self.space.agents:
+            if isinstance(agent, PersonAgent) and agent.last_moved == 0:
+                n_moves += 1
+        return n_moves
+
     
     @property
     def red_districts(self):
@@ -226,6 +173,7 @@ class GerrySort(mesa.Model):
     
     @property
     def declination(self):
+        # NOTE: IndexError: list index out of range: dem_share_rep = 1 - rep_districts[median_rep].red_pct
         # Get districts for Democrats and Republicans
         rep_districts = [district for district in self.space.agents if isinstance(district, DistrictAgent) and district.red_pct > 0.5]
         dem_districts = [district for district in self.space.agents if isinstance(district, DistrictAgent) and district.red_pct < 0.5]
@@ -250,117 +198,109 @@ class GerrySort(mesa.Model):
         # Return declination
         declination = (2 * (slope_dem - slope_rep)) / pi
         return declination
+        # return 0
+
+    def check_crs_consistency(self):
+        # Extract the CRS of each GeoDataFrame
+        crs_precincts = self.precincts.crs
+        # crs_ensemble = self.ensemble.crs
+        crs_initial_plan = self.initial_plan.crs
+        crs_fitness_landscape = self.fitness_landscape.crs
+
+        # Define a reference CRS (e.g., the CRS of the first GeoDataFrame)
+        reference_crs = crs_precincts
+
+        # Assert that all CRS are the same as the reference CRS
+        # assert crs_ensemble == reference_crs, f"CRS mismatch: ensemble ({crs_ensemble}) != reference ({reference_crs})"
+        # assert crs_initial_plan == reference_crs, f"CRS mismatch: initial_plan ({crs_initial_plan}) != reference ({reference_crs})"
+        assert crs_fitness_landscape == crs_initial_plan, f"CRS mismatch: fitness_landscape ({crs_fitness_landscape}) != reference ({crs_initial_plan})"
+
+        print("All CRS are consistent.")
     
-    def redistrict(self, new_districts):
-        # Select the districts in the plan
-        # new_districts = self.ensemble[self.ensemble['plan'] == plan_n].to_crs(self.space.crs)
+    def set_up_gerrychain(self, totpop_id, district_id, n_proposed_maps):
 
-        # Get current districts
-        curr_districts = [district for district in self.space.agents if isinstance(district, DistrictAgent)]
+        self.graph = Graph.from_geodataframe(self.precincts)
+        self.updaters = {
+            "population": updaters.Tally(totpop_id, alias="population"),
+            "cut_edges": updaters.cut_edges,
+            "perimeter": updaters.perimeter,
+            "area": updaters.Tally("area", alias="area"),
+            "geometry": updaters.boundary_nodes,
+        }
+        self.initial_partition = GeographicPartition(
+            self.graph,
+            assignment=district_id,
+            updaters=self.updaters
+        )
+        self.ideal_population = sum(self.initial_partition["population"].values()) / len(self.initial_partition)
+        self.proposal = partial(
+            recom,
+            pop_col=totpop_id,
+            pop_target=self.ideal_population,
+            epsilon=0.01,
+            node_repeats=2,
+        )
+        self.n_proposed_maps = n_proposed_maps
+        self.recom_chain = MarkovChain(
+            proposal=self.proposal,
+            constraints=[contiguous],
+            accept=accept.always_accept,
+            initial_state=self.initial_partition,
+            total_steps=self.n_proposed_maps,
+        )
 
-        # Update the boundaries of the districts
-        for curr_district in curr_districts:
-            # print(curr_district.unique_id, type(curr_district.unique_id))
-            new_district = new_districts[new_districts['district'] == curr_district.unique_id]
-            if not new_district.empty:
-                new_geometry = new_district['geometry'].iloc[0]
-                curr_district.update_district_geometry(new_geometry)
-                curr_district.update_district_data()
-                curr_district.update_district_color()
+    def setup_state(self, district_id, county_id):
+        # Set op voting districts for simulating gerrymandering/electoral processes
+        ac_d = mg.AgentCreator(DistrictAgent, model=self)
+        self.districts = ac_d.from_GeoDataFrame(self.initial_plan, unique_id=district_id)
+        self.n_districts = len(self.districts)
+        self.space.add_districts(self.districts)
 
-    def gerrymander(self):
-        # Generate/save ensemble of plans
-        for i, partition in enumerate(self.recom_chain):
-            self.precincts['plan_{}'.format(i)] = [partition.assignment[n] for n in self.graph.nodes]
+        # Set up counties for simulating population shifts
+        ac_c = mg.AgentCreator(CountyAgent, model=self)
+        self.counties = ac_c.from_GeoDataFrame(self.fitness_landscape, unique_id=county_id)
+        self.n_counties = len(self.counties)
+        self.space.add_counties(self.counties)
 
-        # Process the plans
-        unprocessed_plans = self.precincts[[f'plan_{i}' for i in range(self.max_recomb_steps)] + ['geometry']]
-        processed_plans = unprocessed_plans.melt(id_vars='geometry', var_name='plan', value_vars=[f'plan_{i}' for i in range(self.max_recomb_steps)], value_name='district')
-        processed_plans['plan'] = processed_plans['plan'].str.replace('plan_', '')
-        processed_plans = processed_plans.dissolve(by=['plan', 'district']).reset_index()
-        processed_plans['district'] = processed_plans['district'].astype(str)
+        # Update the county to district map
+        self.space.update_county_to_district_map(self.counties, self.districts)
 
-        # print(processed_plans.head())
-        # Print district values type
-        # print(processed_plans.dtypes)
+    def create_people(self):
+        total_cap = 0
+        # Add agents to the space per county
+        for county in self.counties:
+            pop_county = ceil(county.TOTPOP_SHR * self.npop)
+            # Lower density > more space
+            county.capacity = ceil(county.CAPACITY_SHR * self.npop)
+            total_cap += county.capacity
+            # print(f'County {county.unique_id} has {pop_county} people and {county.capacity} capacity')
+            for _ in range(pop_county):
+                person = PersonAgent(
+                    unique_id=uuid.uuid4().int,
+                    model=self,
+                    crs=self.space.crs,
+                    geometry=county.random_point(),
+                    is_red=county.PRES16R_SHR > random.random(),
+                    district_id=self.space.county_district_map[county.unique_id],
+                    county_id=county.unique_id,
+                )
+                self.space.add_person_to_county(person, county_id=county.unique_id)
+                self.schedule.add(person)
+                if person.is_red: self.nreps += 1
+                else: self.ndems += 1
+            # print(person.crs)
+            self.schedule.add(county)
+            # print(county.crs)
 
-        # Evaluate the plans
-        results = {}
-        for i in range(self.max_recomb_steps):
-            new_districts = processed_plans[processed_plans['plan'] == str(i)].to_crs(self.space.crs)
-            # print("New districts", new_districts)
-            self.redistrict(new_districts)
-            results[f'{i}'] = {
-                "red_districts": self.red_districts,
-                "blue_districts": self.blue_districts,
-                "tied_districts": self.tied_districts,
-                "efficiency_gap": self.efficiency_gap,
-                "mean_median": self.mean_median,
-                "declination": self.declination
-            }
-        # print("TESTING...", results)
-        # Find the plan that maximizes the number of districts favoring the party in control
-        if self.prev_control == "Republican":
-            best_plan = max(results, key=lambda x: results[x]['red_districts'])
-        elif self.prev_control == "Democratic":
-            best_plan = max(results, key=lambda x: results[x]['blue_districts'])
-        else:
-            best_plan = min(results, key=lambda x: results[x]['mean_median'])
-        # print("Best plan", best_plan, results[best_plan])
-        # Redistrict to the best plan
-        best_plan_districts = processed_plans[processed_plans['plan'] == best_plan].to_crs(self.space.crs)
-        # print("Best plan districts", best_plan_districts)
-        # self.redistrict(best_plan_districts)
-
-        # Keep track controlling party before population shift
-        self.prev_control = self.control
-    
-    # def gerrymander(self):
-    #     # Draw a sample of plans
-    #     sample = random.sample(list(self.ensemble['plan'].unique()), self.map_sample_size)
-        
-    #     # Evaluate the plans
-    #     results = {}
-    #     for plan_n in sample:
-    #         self.redistrict(plan_n)
-    #         results[plan_n] = {
-    #             "red_districts": self.red_districts,
-    #             "blue_districts": self.blue_districts,
-    #             "tied_districts": self.tied_districts,
-    #             "efficiency_gap": self.efficiency_gap,
-    #             "mean_median": self.mean_median,
-    #             "declination": self.declination
-    #         }
-
-    #     # Find the plan that maximizes the number of districts favoring the party in control
-    #     if self.prev_control == "Republican":
-    #         best_plan = max(results, key=lambda x: results[x]['red_districts'])
-    #         # print("Red state, maximizing red districts")
-    #         # print(f"From {districts_before} to {results[best_plan]['red_districts']}")
-    #     elif self.prev_control == "Democratic":
-    #         best_plan = max(results, key=lambda x: results[x]['blue_districts'])
-    #         # print("Blue state, maximizing blue districts")
-    #         # print(f"From {districts_before} to {results[best_plan]['blue_districts']}")
-    #     # or minimizing efficiency gap (in case of tie)
-    #     else:
-    #         best_plan = min(results, key=lambda x: results[x]['efficiency_gap'])
-    #         # print("Tied state, minimizing efficiency gap")
-    #         # print(f"From {self.efficiency_gap} to {results[best_plan]['efficiency_gap']}")
-
-    #     # Redistrict to the best plan
-    #     self.redistrict(best_plan)
-
-    #     # Keep track controlling party before population shift
-    #     self.prev_control = self.control
+        # print(f'Total n pop: {self.npop} | Total capacity: {total_cap}')
 
     def step(self):
         # Step all types of agents
         self.schedule.step()
 
-        # Only gerrymander when sorting has converged
-        # if not self.unhappy:
+        # if not self.unhappy:     # Only gerrymander when sorting has converged
         if self.gerrymandering: 
-            self.gerrymander()
+            gerrymander(self)
 
         # Collect data
         self.datacollector.collect(self)

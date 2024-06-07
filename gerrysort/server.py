@@ -2,7 +2,9 @@ import mesa
 import mesa_geo as mg
 from shapely.geometry import box
 
-from .agents import PersonAgent, DistrictAgent, CountyAgent
+from .person import PersonAgent
+from .district import DistrictAgent
+from .county import CountyAgent
 from .model import GerrySort
 
 class DemographicsElement(mesa.visualization.TextElement):
@@ -11,7 +13,7 @@ class DemographicsElement(mesa.visualization.TextElement):
 
 class HappinessElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Happy agents: {model.happy} | Unhappy: {model.unhappy}"
+        return f"Happy agents: {model.happy} | Unhappy: {model.unhappy} (Total moves: {model.n_moves})"
     
 class ControlElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -23,11 +25,13 @@ class MetricsElement(mesa.visualization.TextElement):
     
 model_params = {
     "npop": mesa.visualization.Slider("Number of Agents", 1000, 100, 10000, 100),
-    "similarity_threshold": mesa.visualization.Slider("Tolarence Threshold", 0.5, 0.00, 1.0, 0.05),
+    # "similarity_threshold": mesa.visualization.Slider("Tolarence Threshold", 0.5, 0.00, 1.0, 0.05),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
-    "max_recomb_steps": mesa.visualization.Slider("Max Recombination Steps", 10, 10, 1000, 10),
-    "map_sample_size": mesa.visualization.Slider("Map Sample Size", 10, 10, 100, 10),
-    "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 10, 1, 100, 5),
+    "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 10, 10, 100, 10),
+    "sorting": mesa.visualization.Checkbox("Self Sorting", True),
+    "temperature": mesa.visualization.Slider("Moving Rate (Temperature)", 1.0, 0.0, 200.0, 5),
+    "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 20, 5, 100, 5),
+    "moving_cooldown": mesa.visualization.Slider("Moving Cooldown", 10, 1, 100, 5),
     "distance_decay": mesa.visualization.Slider("Distance Decay", 0.2, 0.00, 1.0, 0.05),
 }
 

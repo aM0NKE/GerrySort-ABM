@@ -162,6 +162,7 @@ cython_debug/
 # Folders
 data/mggg_states/
 testing/
+archive/
 *__MACOSX/
 
 # Files
