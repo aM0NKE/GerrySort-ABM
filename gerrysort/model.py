@@ -23,7 +23,7 @@ from .redistricting_utils import redistrict, gerrymander
 
 
 class GerrySort(mesa.Model):
-    def __init__(self, temperature=0.0, gerrymandering=True, sorting=True, npop=1000, n_proposed_maps=10, n_moving_options=10, moving_cooldown=5, distance_decay=0.5):
+    def __init__(self, tolarence=0.5, beta=0.0, gerrymandering=True, sorting=True, npop=1000, n_proposed_maps=10, n_moving_options=10, moving_cooldown=5, distance_decay=0.5):
         super().__init__()
 
         # Set up the schedule and space
@@ -39,21 +39,19 @@ class GerrySort(mesa.Model):
         # Check CRS consistency
         self.check_crs_consistency()
 
-        # Set up Gerrychain
-        self.set_up_gerrychain('TOTPOP', 'CONGDIST', n_proposed_maps)
-
         # Set parameters
         self.npop = npop
         self.ndems = 0
         self.nreps = 0
-
         self.gerrymandering = gerrymandering
-
-        self.sorting = sorting
-        self.temperature = temperature
-        self.n_moving_options = n_moving_options
-        self.moving_cooldown = moving_cooldown
-        self.distance_decay = distance_decay
+        if gerrymandering: self.set_up_gerrychain('TOTPOP', 'CONGDIST', n_proposed_maps)
+        if sorting:
+            self.sorting = sorting
+            self.tolarence = tolarence
+            self.beta = beta
+            self.n_moving_options = n_moving_options
+            self.moving_cooldown = moving_cooldown
+            self.distance_decay = distance_decay
 
         # Set up the data collector
         self.datacollector = mesa.DataCollector(
@@ -69,10 +67,8 @@ class GerrySort(mesa.Model):
              "n_moves": "n_moves"}
         )
 
-        # Create District and County agents
-        self.setup_state('district', 'COUNTY')
-
-        # Create Person agents
+        # Create three agent types
+        self.create_counties_districts('COUNTY', 'district')
         self.create_people()
 
         # Add districts to the scheduler and update their color
@@ -108,7 +104,6 @@ class GerrySort(mesa.Model):
                 n_moves += 1
         return n_moves
 
-    
     @property
     def red_districts(self):
         num_red = 0
@@ -198,22 +193,13 @@ class GerrySort(mesa.Model):
         # Return declination
         declination = (2 * (slope_dem - slope_rep)) / pi
         return declination
-        # return 0
 
     def check_crs_consistency(self):
         # Extract the CRS of each GeoDataFrame
-        crs_precincts = self.precincts.crs
-        # crs_ensemble = self.ensemble.crs
         crs_initial_plan = self.initial_plan.crs
         crs_fitness_landscape = self.fitness_landscape.crs
 
-        # Define a reference CRS (e.g., the CRS of the first GeoDataFrame)
-        reference_crs = crs_precincts
-
-        # Assert that all CRS are the same as the reference CRS
-        # assert crs_ensemble == reference_crs, f"CRS mismatch: ensemble ({crs_ensemble}) != reference ({reference_crs})"
-        # assert crs_initial_plan == reference_crs, f"CRS mismatch: initial_plan ({crs_initial_plan}) != reference ({reference_crs})"
-        assert crs_fitness_landscape == crs_initial_plan, f"CRS mismatch: fitness_landscape ({crs_fitness_landscape}) != reference ({crs_initial_plan})"
+        assert crs_fitness_landscape == crs_initial_plan, f"CRS mismatch: fitness_landscape ({crs_fitness_landscape}) != initial_plan ({crs_initial_plan})"
 
         print("All CRS are consistent.")
     
@@ -249,7 +235,7 @@ class GerrySort(mesa.Model):
             total_steps=self.n_proposed_maps,
         )
 
-    def setup_state(self, district_id, county_id):
+    def create_counties_districts(self, county_id, district_id):
         # Set op voting districts for simulating gerrymandering/electoral processes
         ac_d = mg.AgentCreator(DistrictAgent, model=self)
         self.districts = ac_d.from_GeoDataFrame(self.initial_plan, unique_id=district_id)

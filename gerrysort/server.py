@@ -25,13 +25,13 @@ class MetricsElement(mesa.visualization.TextElement):
     
 model_params = {
     "npop": mesa.visualization.Slider("Number of Agents", 1000, 100, 10000, 100),
-    # "similarity_threshold": mesa.visualization.Slider("Tolarence Threshold", 0.5, 0.00, 1.0, 0.05),
+    "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.5, 0.00, 1.0, 0.05),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
     "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 10, 10, 100, 10),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
-    "temperature": mesa.visualization.Slider("Moving Rate (Temperature)", 1.0, 0.0, 200.0, 5),
-    "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 20, 5, 100, 5),
-    "moving_cooldown": mesa.visualization.Slider("Moving Cooldown", 10, 1, 100, 5),
+    "beta": mesa.visualization.Slider("beta (Temperature)", 1.0, 0.0, 200.0, 5),
+    "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 10, 5, 100, 5),
+    "moving_cooldown": mesa.visualization.Slider("Moving Cooldown", 0, 0, 25, 1),
     "distance_decay": mesa.visualization.Slider("Distance Decay", 0.2, 0.00, 1.0, 0.05),
 }
 
