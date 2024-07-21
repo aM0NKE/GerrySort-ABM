@@ -1,10 +1,11 @@
+from .person import PersonAgent
+
 import mesa_geo as mg
 import random
 from shapely.geometry import Point, Polygon, MultiPolygon
 
-from .person import PersonAgent
-
 class CountyAgent(mg.GeoAgent):
+
     capacity: int
     num_people: int
     red_cnt: int
@@ -14,6 +15,9 @@ class CountyAgent(mg.GeoAgent):
     district_id: str
 
     def __init__(self, unique_id, model, geometry, crs):
+        '''
+        Initialize county agent.
+        '''
         super().__init__(unique_id, model, geometry, crs)
         self.capacity = 0
         self.num_people = 0

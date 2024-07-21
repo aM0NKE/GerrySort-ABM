@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/AK-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/AZ-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/CO-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/CT-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/DE-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/GA-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/HI-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/IA-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/IL-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/IN-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/LA-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/MA-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/MD-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/ME-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/MI-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/MN-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/NC-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/ND-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/NE-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/NH-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/NM-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/OH-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/OK-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/OR-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/PA-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/PR-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/RI-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/TX-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/UT-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/VA-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/VT-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/WA-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/WI-Elections-w-Primaries" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/mggg_states/WI-shapefiles" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/testing/demo/IA-shapefiles" vcs="Git" />
+  </component>
+</project>

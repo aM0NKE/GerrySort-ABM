@@ -1,107 +1,127 @@
-# redistricting_utils.py
 from .district import DistrictAgent
 
+import geopandas as gpd
+import pandas as pd
 
 def redistrict(model, new_districts):
-    """
+    '''
     Update the boundaries of the districts based on new_districts GeoDataFrame.
-    """
-    # Get current districts
-    curr_districts = [district for district in model.space.agents if isinstance(district, DistrictAgent)]
-
-    # Update the boundaries of the districts
-    for curr_district in curr_districts:
-        new_district = new_districts[new_districts['district'] == curr_district.unique_id]
+    '''
+    for district in model.USHouseDistricts:
+        new_district = new_districts[new_districts['district'] == district.unique_id]
         if not new_district.empty:
             new_geometry = new_district['geometry'].iloc[0]
-            curr_district.update_district_geometry(new_geometry)
-            curr_district.update_district_data()
-            curr_district.update_district_color()
+            district.update_district_geometry(new_geometry)
+            district.update_district_data()
+            district.update_district_color()
 
-def gerrymander(model):
-    """
-    Perform the gerrymandering process.
-    """
-    # Generate/save ensemble of plans
+def process_plans(model, unprocessed_plans):
+    '''
+    Process the plans by melting, dissolving, and converting to geopandas dataframe.
+    '''
+    # Melt the plans
+    processed_plans = unprocessed_plans.melt(id_vars='geometry', var_name='plan', value_vars=[f'plan_{i}' for i in range(model.n_proposed_maps)], value_name='district')
+    # Remove 'plan_' prefix from plan column
+    processed_plans['plan'] = processed_plans['plan'].str.replace('plan_', '')
+    # Dissolve by plan and district
+    processed_plans = processed_plans.dissolve(by=['plan', 'district']).reset_index()
+    # Convert district to string
+    processed_plans['district'] = processed_plans['district'].astype(str)
+    # Convert crs to model crs
+    processed_plans = processed_plans.to_crs(model.space.crs)
+
+    return processed_plans
+
+def generate_ensemble(model):
+    ''' 
+    Generate ensemble of plans with GerryChain, process them, and add current district map. 
+    '''
+    # Generate ensemble of plans
     for i, partition in enumerate(model.recom_chain):
         model.precincts['plan_{}'.format(i)] = [partition.assignment[n] for n in model.graph.nodes]
 
-    # Process the plans
+    # Transform the plans
     unprocessed_plans = model.precincts[[f'plan_{i}' for i in range(model.n_proposed_maps)] + ['geometry']]
-    processed_plans = unprocessed_plans.melt(id_vars='geometry', var_name='plan', value_vars=[f'plan_{i}' for i in range(model.n_proposed_maps)], value_name='district')
-    processed_plans['plan'] = processed_plans['plan'].str.replace('plan_', '')
-    processed_plans = processed_plans.dissolve(by=['plan', 'district']).reset_index()
-    processed_plans['district'] = processed_plans['district'].astype(str)
 
-    # Evaluate the plans
+    # Process the plans
+    processed_plans = process_plans(model, unprocessed_plans)
+
+    # Add current plan to the processed plans
+    for district in model.USHouseDistricts:
+        # Convert district to GeoDataFrame
+        district_gdf = gpd.GeoDataFrame({'plan': '-1', 'district': district.unique_id, 'geometry': [district.geometry]}, crs=model.space.crs)
+        processed_plans = pd.concat([processed_plans, district_gdf], ignore_index=True)
+
+    # TODO: Save plans to file for each step
+    print('processed plans:\n', processed_plans)
+    return processed_plans
+
+
+def evaluate_plans(model, ensemble):
+    '''
+    Evaluate the ensemble of plans by all possible metrics.
+    '''
     results = {}
-    for i in range(model.n_proposed_maps):
-        new_districts = processed_plans[processed_plans['plan'] == str(i)].to_crs(model.space.crs)
+    for i in range(-1, model.n_proposed_maps):
+        # Extract the districts for the plan
+        new_districts = ensemble[ensemble['plan'] == str(i)]
+        # Update the boundaries of the districts
         redistrict(model, new_districts)
+        # Update the statistics of the model
+        model.datacollector.collect(model) # TODO: Check if this is necessary
+        # Save the results
         results[f'{i}'] = {
-            "red_districts": model.red_districts,
-            "blue_districts": model.blue_districts,
-            "tied_districts": model.tied_districts,
-            "efficiency_gap": model.efficiency_gap,
-            "mean_median": model.mean_median,
-            "declination": model.declination
+            'unhappy': model.happy,
+            'happy': model.unhappy,
+            'red_districts': model.red_districts,
+            'blue_districts': model.blue_districts,
+            'tied_districts': model.tied_districts,
+            'efficiency_gap': model.efficiency_gap,
+            'mean_median': model.mean_median,
+            'declination': model.declination
         }
-    
+    print('\nresults:\n', results)
+    return results
+
+def gerrymander(model):
+    '''
+    Perform the gerrymandering process.
+    '''
+    # Generate/save ensemble of plans
+    ensemble = generate_ensemble(model)
+
+    # Evalaute the plans
+    eval_results = evaluate_plans(model, ensemble)
+
     # Find the plan that maximizes the number of districts favoring the party in control
-    if model.prev_control == "Republican":
-        best_plan = max(results, key=lambda x: results[x]['red_districts'])
-    elif model.prev_control == "Democratic":
-        best_plan = max(results, key=lambda x: results[x]['blue_districts'])
-    else:
-        best_plan = min(results, key=lambda x: results[x]['mean_median'])
-    
-    # Redistrict to the best plan
-    best_plan_districts = processed_plans[processed_plans['plan'] == best_plan].to_crs(model.space.crs)
-    redistrict(model, best_plan_districts)
+    if model.control == 'Republican':
+        # Select plan with most red districts
+        best_plan = max(eval_results, key=lambda x: eval_results[x]['red_districts'])
+        print('\nBest Republican plan:', best_plan)
+        best_plan_districts = ensemble[ensemble['plan'] == best_plan]
+        print('Best Republican plan districts:\n', best_plan_districts)
+        redistrict(model, best_plan_districts)
+        print('Republican state, maximizing red districts')
+            
+    elif model.control == 'Democratic':
+        # Select plan that most blue districts
+        best_plan = max(eval_results, key=lambda x: eval_results[x]['blue_districts'])
+        print('\nBest Democratic plan:', best_plan)
+        best_plan_districts = ensemble[ensemble['plan'] == best_plan]
+        print('Best Democratic plan districts:\n', best_plan_districts)
+        redistrict(model, best_plan_districts)
+        print('Democrart state, maximizing blue districts')
+
+    # Or, in case of a tie, select the plan that minimizes efficiency gap
+    elif model.control == 'Tied':
+        # Select plan with efficiency gap closest to 0 (fairness)
+        best_plan = min(eval_results, key=lambda x: abs(eval_results[x]['efficiency_gap']))
+        print('\nBest plan:', best_plan)
+        best_plan_districts = ensemble[ensemble['plan'] == best_plan]
+        print('Best plan districts:\n', best_plan_districts)
+        redistrict(model, best_plan_districts)
+        print('Tied state, minimizing efficiency gap')
 
     # Keep track controlling party before population shift
-    model.prev_control = model.control
-
-
-
-
-    
-
-# NOTE: Old gerrymandering function (using pre-generated ensemble of plans)
-    # def gerrymander(self):
-    #     # Draw a sample of plans
-    #     sample = random.sample(list(self.ensemble['plan'].unique()), self.n_proposed_maps)
-        
-    #     # Evaluate the plans
-    #     results = {}
-    #     for plan_n in sample:
-    #         self.redistrict(plan_n)
-    #         results[plan_n] = {
-    #             "red_districts": self.red_districts,
-    #             "blue_districts": self.blue_districts,
-    #             "tied_districts": self.tied_districts,
-    #             "efficiency_gap": self.efficiency_gap,
-    #             "mean_median": self.mean_median,
-    #             "declination": self.declination
-    #         }
-
-    #     # Find the plan that maximizes the number of districts favoring the party in control
-    #     if self.prev_control == "Republican":
-    #         best_plan = max(results, key=lambda x: results[x]['red_districts'])
-    #         # print("Red state, maximizing red districts")
-    #         # print(f"From {districts_before} to {results[best_plan]['red_districts']}")
-    #     elif self.prev_control == "Democratic":
-    #         best_plan = max(results, key=lambda x: results[x]['blue_districts'])
-    #         # print("Blue state, maximizing blue districts")
-    #         # print(f"From {districts_before} to {results[best_plan]['blue_districts']}")
-    #     # or minimizing efficiency gap (in case of tie)
-    #     else:
-    #         best_plan = min(results, key=lambda x: results[x]['efficiency_gap'])
-    #         # print("Tied state, minimizing efficiency gap")
-    #         # print(f"From {self.efficiency_gap} to {results[best_plan]['efficiency_gap']}")
-
-    #     # Redistrict to the best plan
-    #     self.redistrict(best_plan)
-
-    #     # Keep track controlling party before population shift
-    #     self.prev_control = self.control
+    model.datacollector.collect(model) # TODO: Check if this is necessary
+    model.control = model.projected_winner

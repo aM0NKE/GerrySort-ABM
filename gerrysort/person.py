@@ -1,9 +1,9 @@
 import mesa_geo as mg
 import numpy as np
-import random
 from geopy.distance import great_circle
 
 class PersonAgent(mg.GeoAgent):
+
     is_red: bool
     district_id: str
     county_id: str
@@ -11,6 +11,9 @@ class PersonAgent(mg.GeoAgent):
     is_unhappy: bool
 
     def __init__(self, unique_id, model, geometry, crs, is_red, district_id, county_id):
+        '''
+        Initialize person agent.
+        '''
         super().__init__(unique_id, model, geometry, crs)
         self.is_red = is_red
         self.district_id = district_id
@@ -20,9 +23,10 @@ class PersonAgent(mg.GeoAgent):
 
     @property
     def is_unhappy(self):
+        self.update_utility()
         return self.utility < self.model.tolarence
 
-    def calculate_utility(self, county_id, A=1, alpha=(1, 1, 1, 1)):
+    def calculate_utility(self, county_id, A=1, alpha=(1, 1, 1, 1)): 
         # Party affilliation matching county party majority
         county = self.model.space.get_county_by_id(county_id)
         if self.is_red and county.red_pct > 0.5:
@@ -30,7 +34,7 @@ class PersonAgent(mg.GeoAgent):
         elif not self.is_red and county.red_pct < 0.5:
             X1 = 1
         else:
-            X1 = 0.25
+            X1 = 0
 
         # Party affilliation matching district party majority
         district = self.model.space.get_district_by_id(self.district_id)
@@ -39,7 +43,7 @@ class PersonAgent(mg.GeoAgent):
         elif not self.is_red and district.red_pct < 0.5:
             X2 = 1
         else:
-            X2 = 0.5
+            X2 = 0
 
         # Urbanicity matching county urbanicity
         if self.is_red and county.RUCACAT == 'rural':
@@ -51,14 +55,13 @@ class PersonAgent(mg.GeoAgent):
         elif not self.is_red and county.RUCACAT == 'large_town':
             X3 = 0.5
         else:
-            X3 = 0.25
+            X3 = 0
 
         # Reward/penalize capacity 
-        # NOTE: Make more continuous: 1-x/x_max * C (param for over max cap val>1) 
         if county.num_people < county.capacity:
             X4 = 1
         else:
-            X4 = 0.5
+            X4 = 0
 
         # Return utility
         a1, a2, a3, a4 = alpha

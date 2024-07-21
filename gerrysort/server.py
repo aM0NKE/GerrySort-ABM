@@ -9,7 +9,7 @@ from .model import GerrySort
 
 class DemographicsElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Number of Dems: {model.ndems} | Reps: {model.nreps}"
+        return f"Number of Dems: {model.ndems} | Reps: {model.nreps} | Total: {model.npop} (State Capacity: {model.total_cap})"
 
 class HappinessElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -17,22 +17,22 @@ class HappinessElement(mesa.visualization.TextElement):
     
 class ControlElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Control: {model.prev_control} | Projected Winner: {model.control} | Proj. Seats: D: {model.blue_districts} | R: {model.red_districts} | T: {model.tied_districts}"
+        return f"Control: {model.control} | Projected Winner: {model.projected_winner} | Proj. Seats: D: {model.blue_districts} | R: {model.red_districts} | T: {model.tied_districts}"
 
 class MetricsElement(mesa.visualization.TextElement):
     def render(self, model):
         return f"EG: {model.efficiency_gap:.2f} | M-M: {model.mean_median:.2f} | Dec: {model.declination:.2f}"
     
 model_params = {
-    "npop": mesa.visualization.Slider("Number of Agents", 1000, 100, 10000, 100),
+    "npop": mesa.visualization.Slider("Number of Agents", 100, 100, 10000, 100),
     "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.5, 0.00, 1.0, 0.05),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
-    "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 10, 10, 100, 10),
-    "sorting": mesa.visualization.Checkbox("Self Sorting", True),
+    "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 3, 1, 30, 1),
+    "sorting": mesa.visualization.Checkbox("Self Sorting", False),
     "beta": mesa.visualization.Slider("beta (Temperature)", 1.0, 0.0, 200.0, 5),
     "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 10, 5, 100, 5),
     "moving_cooldown": mesa.visualization.Slider("Moving Cooldown", 0, 0, 25, 1),
-    "distance_decay": mesa.visualization.Slider("Distance Decay", 0.2, 0.00, 1.0, 0.05),
+    # "distance_decay": mesa.visualization.Slider("Distance Decay", 0.2, 0.00, 1.0, 0.05),
 }
 
 def schelling_draw(agent):
