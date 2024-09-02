@@ -7,6 +7,10 @@ from .district import DistrictAgent
 from .county import CountyAgent
 from .model import GerrySort
 
+class ModelParamsElement(mesa.visualization.TextElement):
+    def render(self, model):
+        return f"Sorting: {model.sorting} | Gerrymandering: {model.gerrymandering} | Number of Agents: {model.npop} | Tolarence: {model.tolarence} | Beta: {model.beta} | Capacity Multiplier: {model.capacity_mul} | Number of Proposed Maps: {model.n_proposed_maps} | Number of Moving Options: {model.n_moving_options} | Moving Cooldown: {model.moving_cooldown}"
+
 class DemographicsElement(mesa.visualization.TextElement):
     def render(self, model):
         return f"Number of Dems: {model.ndems} | Reps: {model.nreps} | Total: {model.npop} (State Capacity: {model.total_cap})"
@@ -15,10 +19,22 @@ class HappinessElement(mesa.visualization.TextElement):
     def render(self, model):
         return f"Happy agents: {model.happy} | Unhappy: {model.unhappy} (Total moves: {model.n_moves})"
     
+class CongressionalElement(mesa.visualization.TextElement):
+    def render(self, model):
+        return f"Projected Congressional Seats: D: {model.blue_congressional_seats} | R: {model.red_congressional_seats} | T: {model.tied_congressional_seats}"
+    
+class StateHouseElement(mesa.visualization.TextElement):
+    def render(self, model):
+        return f"Projected State House Seats: D: {model.blue_state_house_seats} | R: {model.red_state_house_seats} | T: {model.tied_state_house_seats}"
+    
+class StateSenateElement(mesa.visualization.TextElement):
+    def render(self, model):
+        return f"Projected State Senate Seats: D: {model.blue_state_senate_seats} | R: {model.red_state_senate_seats} | T: {model.tied_state_senate_seats}"
+
 class ControlElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Control: {model.control} | Projected Winner: {model.projected_winner} | Proj. Seats: D: {model.blue_districts} | R: {model.red_districts} | T: {model.tied_districts}"
-
+        return f"Control: {model.control} | Projected Winner: {model.projected_winner} | Projected Margin: {model.projected_margin}"
+    
 class MetricsElement(mesa.visualization.TextElement):
     def render(self, model):
         return f"EG: {model.efficiency_gap:.2f} | M-M: {model.mean_median:.2f} | Dec: {model.declination:.2f}"
@@ -26,13 +42,15 @@ class MetricsElement(mesa.visualization.TextElement):
 model_params = {
     "npop": mesa.visualization.Slider("Number of Agents", 100, 100, 10000, 100),
     "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.5, 0.00, 1.0, 0.05),
+    "capacity_mul": mesa.visualization.Slider("Capacity Multiplier", 1.0, 0.0, 10.0, 0.1),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
     "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 3, 1, 30, 1),
-    "sorting": mesa.visualization.Checkbox("Self Sorting", False),
+    "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "beta": mesa.visualization.Slider("beta (Temperature)", 1.0, 0.0, 200.0, 5),
     "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 10, 5, 100, 5),
     "moving_cooldown": mesa.visualization.Slider("Moving Cooldown", 0, 0, 25, 1),
-    # "distance_decay": mesa.visualization.Slider("Distance Decay", 0.2, 0.00, 1.0, 0.05),
+    # "distance_decay": mesa.visualization.Slider("Distance Decay", 0.2, 0.00, 1.0, 0.05), TODO: Part of the discounted utility
+    "console": mesa.visualization .Checkbox("Console Log", True),
 }
 
 def schelling_draw(agent):
@@ -47,8 +65,12 @@ def schelling_draw(agent):
         portrayal["color"] = "Red" if agent.is_red else "Blue"
     return portrayal
 
+model_params_element = ModelParamsElement()
 demographics_element = DemographicsElement()
 happiness_element = HappinessElement()
+congressional_element = CongressionalElement()
+state_house_element = StateHouseElement()
+state_senate_element = StateSenateElement()
 control_element = ControlElement()
 metrics_element = MetricsElement()
 
@@ -61,11 +83,25 @@ happy_chart = mesa.visualization.ChartModule(
         {"Label": "happy",   "Color": "Green",},
     ]
 )
-seat_share_chart = mesa.visualization.ChartModule(
+congressional_seat_share_chart = mesa.visualization.ChartModule(
     [
-        {"Label": "red_districts", "Color": "Red"},
-        {"Label": "blue_districts", "Color": "Blue"},
-        {"Label": "tied_districts", "Color": "Grey"},
+        {"Label": "red_congressional_seats", "Color": "Red"},
+        {"Label": "blue_congressional_seats", "Color": "Blue"},
+        {"Label": "tied_congressional_seats", "Color": "Grey"},
+    ]
+)
+state_house_seat_share_chart = mesa.visualization.ChartModule(
+    [
+        {"Label": "red_state_house_seats", "Color": "Red"},
+        {"Label": "blue_state_house_seats", "Color": "Blue"},
+        {"Label": "tied_state_house_seats", "Color": "Grey"},
+    ]
+)
+state_senate_seat_share_chart = mesa.visualization.ChartModule(
+    [
+        {"Label": "red_state_senate_seats", "Color": "Red"},
+        {"Label": "blue_state_senate_seats", "Color": "Blue"},
+        {"Label": "tied_state_senate_seats", "Color": "Grey"},
     ]
 )
 metrics_chart = mesa.visualization.ChartModule(
@@ -78,7 +114,11 @@ metrics_chart = mesa.visualization.ChartModule(
 
 server = mesa.visualization.ModularServer(
     GerrySort,
-    [map_element, demographics_element, happy_chart, happiness_element, seat_share_chart, control_element, metrics_chart, metrics_element],
+    [model_params_element, map_element, demographics_element, happy_chart, happiness_element, 
+     congressional_seat_share_chart, congressional_element, 
+     state_house_seat_share_chart,  state_house_element, 
+     state_senate_seat_share_chart, state_senate_element, control_element, 
+     metrics_chart, metrics_element],
     "GerrySort",
     model_params,
 )

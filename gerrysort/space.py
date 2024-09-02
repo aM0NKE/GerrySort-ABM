@@ -7,7 +7,6 @@ from .district import DistrictAgent
 from .county import CountyAgent
 
 class ElectoralDistricts(mg.GeoSpace):
-
     _id_district_map: Dict[str, DistrictAgent]
     _id_county_map: Dict[str, CountyAgent]
     county_district_map: Dict[str, str]
@@ -18,6 +17,11 @@ class ElectoralDistricts(mg.GeoSpace):
         self._id_county_map = {}
 
     def add_districts(self, districts):
+        '''
+        Adds and saves electoral districts to visualization map.
+
+        districts: list of electoral district instances to redistrict
+        '''
         # Add districts to the space
         super().add_agents(districts)
 
@@ -25,8 +29,14 @@ class ElectoralDistricts(mg.GeoSpace):
         for agent in districts:
             if isinstance(agent, DistrictAgent):
                 self._id_district_map[agent.unique_id] = agent
+        if agent.model.console: print(f"Added {len(districts)} districts to the space.")
 
     def add_counties(self, counties):
+        '''
+        Saves counties to county-id map.
+
+        counties: list of county instances used to relocate
+        '''
         # super().add_agents(counties)
 
         # Add counties to the id map
@@ -35,6 +45,12 @@ class ElectoralDistricts(mg.GeoSpace):
                 self._id_county_map[agent.unique_id] = agent
 
     def update_county_to_district_map(self, counties, districts):
+        '''
+        Clears the county-district map and rebuilds it after the redistricting process.
+
+        counties: list of county instances used to relocate
+        districts: list of electoral district instances to redistrict
+        '''
         # Clear the map
         self.county_district_map = {}
 
@@ -47,18 +63,38 @@ class ElectoralDistricts(mg.GeoSpace):
                     self.county_district_map[county.unique_id] = district.unique_id
                     break  # Stop iteration once a match is found
     
-    def add_person_to_county(self, person, county_id, new_position=None):
-        person.county_id = county_id
-        person.district_id = self.county_district_map[county_id]
-        if new_position is None: person.geometry = self._id_county_map[county_id].random_point()
-        else: person.geometry = new_position
+    def add_person_to_county(self, person, new_county_id, new_position=None):
+        '''
+        Adds person to county for visualization and updates attributes.
+
+        person: Person agent instance
+        new_county_id: new county id
+        new_position: new coordinates of relocation destination
+        '''
+        # Update attributes
+        person.county_id = new_county_id
+        person.district_id = self.county_district_map[new_county_id]
+        if new_position is not None: 
+            person.geometry = new_position
+        else: 
+            person.geometry = self._id_county_map[new_county_id].random_point()
+
+        # Add agent to map
         super().add_agents(person)
-        person.update_utility()
+        # person.calculate_utility()
 
     def remove_person_from_county(self, person):
+        '''
+        Removes person from county for visualization and clears it's attributes.
+
+        person: Person agent instance
+        '''
+        # Clear attributes
         person.county_id = None
         person.district_id = None
         person.geometry = None
+
+        # Remove agent to map
         super().remove_agent(person)
 
     def get_random_district_id(self) -> str:

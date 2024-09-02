@@ -1,11 +1,11 @@
 import geopandas as gpd
 
 # Set input file path
-input_path = 'MN_precincts.geojson'
-district_unit = 'CONGDIST'
+input_path = 'MN/MN_precincts.geojson'
+district_unit = 'MNLEGDIST'
 
 # Set output file path
-output_path = 'MN_CONGDIST_initial.geojson'
+output_path = 'MN/MN_' + district_unit + '_initial.geojson'
 
 # Open the file
 gdf = gpd.read_file(input_path)

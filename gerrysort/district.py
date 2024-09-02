@@ -13,11 +13,24 @@ class DistrictAgent(mg.GeoAgent):
     color: str
     red_pct: float
 
-    def __init__(self, unique_id, model, geometry, crs):
+    def __init__(self, unique_id, model, geometry, crs, type):
         '''
         Initialize electoral district agent.
+
+        unique_id: Unique identifier of the district
+        model: Model containing the district
+        geometry: Geometry of the district
+        crs: Coordinate Reference System of the district
+
+        Attributes:
+            type: Type of the district (congressional, state-senate, state-house)
+            num_people: Number of people in the district
+            red_cnt: Number of republican agents in the district
+            blue_cnt: Number of democratic agents in the district
+
         '''
         super().__init__(unique_id, model, geometry, crs)
+        self.type = type
         self.num_people = 0
         self.red_cnt = 0
         self.blue_cnt = 0
@@ -26,13 +39,13 @@ class DistrictAgent(mg.GeoAgent):
     @property
     def red_pct(self):
         '''
-        Returns the percentage of red people in the district.
+        Returns the percentage of red people in the electoral district.
         '''
         if self.red_cnt == 0:
             return 0
         elif self.blue_cnt == 0:
             return 1
-        elif self.red_cnt == 0 and self.blue_cnt == 0:
+        elif self.red_cnt == 0 and self.blue_cnt == 0: # NOTE: in case district is empty, assign as tied district.
             return 0.5
         else:
             return self.red_cnt / (self.red_cnt + self.blue_cnt)
@@ -40,21 +53,22 @@ class DistrictAgent(mg.GeoAgent):
     @property 
     def blue_pct(self):
         '''
-        Returns the percentage of blue people in the district.
+        Returns the percentage of blue people in the electoral district.
         '''
-        if self.blue_cnt == 0:
-            return 0
-        elif self.red_cnt == 0:
-            return 1
-        elif self.red_cnt == 0 and self.blue_cnt == 0:
-            return 0.5
-        else:
-            return self.blue_cnt / (self.red_cnt + self.blue_cnt)
+        # if self.blue_cnt == 0:
+        #     return 0
+        # elif self.red_cnt == 0:
+        #     return 1
+        # elif self.red_cnt == 0 and self.blue_cnt == 0:
+        #     return 0.5
+        # else:
+        #     return self.blue_cnt / (self.red_cnt + self.blue_cnt)
+        return 1 - self.red_pct
 
     @property
-    def winner(self):
+    def majority(self):
         '''
-        Returns the majority party of the district.
+        Returns the majority party of the electoral district.
         '''
         if self.red_cnt > self.blue_cnt:
             return 'Republican'
@@ -65,15 +79,15 @@ class DistrictAgent(mg.GeoAgent):
 
     def calculate_wasted_votes(self):
         '''
-        Calculates the wasted votes for the rep and blue parties.
+        Calculates the wasted votes for the Dem and Rep party.
         '''
         red_wasted_votes = 0
         blue_wasted_votes = 0
         
-        if self.red_pct > 0.5:
+        if self.majority == 'Republican':
             red_wasted_votes = self.red_cnt - ceil((self.red_cnt + self.blue_cnt) / 2)
             blue_wasted_votes = self.blue_cnt
-        elif self.red_pct < 0.5:
+        elif self.majority == 'Democratic':
             red_wasted_votes = self.red_cnt
             blue_wasted_votes = self.blue_cnt - ceil((self.red_cnt + self.blue_cnt) / 2)
         else:
@@ -84,7 +98,7 @@ class DistrictAgent(mg.GeoAgent):
     
     def update_district_geometry(self, new_geometry):
         '''
-        Function that updates the geometry of the district.
+        Updates the geometry of the electoral district.
         '''
         if isinstance(new_geometry, Polygon):
             new_geometry = MultiPolygon([new_geometry])
@@ -93,12 +107,12 @@ class DistrictAgent(mg.GeoAgent):
 
     def update_district_data(self):
         '''
-        Function that updates the data of the district.
+        Updates the data of the electoral district.
         '''
+        # Reset counters
         self.num_people = 0
         self.red_cnt = 0
         self.blue_cnt = 0
-
         # Update district counts
         for person in self.model.population:
             if self.geometry.contains(person.geometry):
@@ -107,21 +121,22 @@ class DistrictAgent(mg.GeoAgent):
                     self.red_cnt += 1
                 else:
                     self.blue_cnt += 1
-
-                # Update the district id of the person
-                person.district_id = self.unique_id
+                # Update the district_id of the person (only if district is congressional)
+                if self.type == 'congressional':
+                    person.district_id = self.unique_id
     
     def update_district_color(self):
         '''
-        Function thats updates the color of the district.
+        Updates the color of the electoral district, used for the visualization.
         '''
-        if self.winner is 'Republican':
+        if self.majority == 'Republican':
             self.color = 'Red'
-        elif self.winner is 'Democratic':
+        elif self.majority == 'Democratic':
             self.color = 'Blue'
         else:
             self.color = 'Grey'
 
     def step(self):
+        # TODO: check if this is scheduled correctly
         self.update_district_data()
         self.update_district_color()
