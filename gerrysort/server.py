@@ -40,17 +40,17 @@ class MetricsElement(mesa.visualization.TextElement):
         return f"EG: {model.efficiency_gap:.2f} | M-M: {model.mean_median:.2f} | Dec: {model.declination:.2f}"
     
 model_params = {
-    "npop": mesa.visualization.Slider("Number of Agents", 100, 100, 10000, 100),
-    "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.5, 0.00, 1.0, 0.05),
-    "capacity_mul": mesa.visualization.Slider("Capacity Multiplier", 1.0, 0.0, 10.0, 0.1),
-    "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
-    "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 3, 1, 30, 1),
+    "console": mesa.visualization .Checkbox("Console Log", True),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
-    "beta": mesa.visualization.Slider("beta (Temperature)", 1.0, 0.0, 200.0, 5),
+    "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", False),
+    "npop": mesa.visualization.Slider("Number of Agents", 100, 100, 10000, 100),
+    "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.30, 0.00, 1.00, 0.05),
+    "beta": mesa.visualization.Slider("Beta (Temperature)", 200.0, 0.0, 200.0, 5),
+    "capacity_mul": mesa.visualization.Slider("Capacity Multiplier", 10.0, 0.0, 10.0, 0.1),
+    "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 3, 1, 30, 1),
     "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 10, 5, 100, 5),
     "moving_cooldown": mesa.visualization.Slider("Moving Cooldown", 0, 0, 25, 1),
     # "distance_decay": mesa.visualization.Slider("Distance Decay", 0.2, 0.00, 1.0, 0.05), TODO: Part of the discounted utility
-    "console": mesa.visualization .Checkbox("Console Log", True),
 }
 
 def schelling_draw(agent):

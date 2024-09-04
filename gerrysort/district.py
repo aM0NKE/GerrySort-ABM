@@ -135,8 +135,3 @@ class DistrictAgent(mg.GeoAgent):
             self.color = 'Blue'
         else:
             self.color = 'Grey'
-
-    def step(self):
-        # TODO: check if this is scheduled correctly
-        self.update_district_data()
-        self.update_district_color()

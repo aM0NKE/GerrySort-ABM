@@ -66,8 +66,9 @@ class GerrySort(mesa.Model):
         self.capacity_mul = capacity_mul
         self.gerrymandering = gerrymandering
         self.sorting = sorting
+        self.n_proposed_maps = n_proposed_maps
         if gerrymandering: 
-            self.set_up_gerrychain('TOTPOP', 'CONGDIST', n_proposed_maps)
+            self.set_up_gerrychain('TOTPOP', 'CONGDIST', self.n_proposed_maps)
         # if sorting:
         self.beta = beta
         self.n_moving_options = n_moving_options
@@ -364,7 +365,6 @@ class GerrySort(mesa.Model):
             epsilon=0.01,
             node_repeats=2,
         )
-        self.n_proposed_maps = n_proposed_maps
         self.recom_chain = MarkovChain(
             proposal=self.proposal,
             constraints=[contiguous],
@@ -452,6 +452,20 @@ class GerrySort(mesa.Model):
         '''
         [agent.update_utility() for agent in self.population]
 
+    def self_sort(self):
+        '''
+        Self-sorting process for agents in the model.
+        '''
+        # Update moving cooldown
+        for agent in self.population:
+            # Check if utility is below threshold and cooldown has passed
+            if agent.is_unhappy and self.moving_cooldown <= agent.last_moved:
+                agent.sort()
+            else:
+                agent.last_moved += 1
+
+        if self.console: print('Sorting complete.')
+
     def create_population(self):
         '''
         Create and add Person agents for the model.
@@ -510,18 +524,28 @@ class GerrySort(mesa.Model):
             print('------------------------------------')
             print('Advancing model... (t={})'.format(self.schedule.steps+1))
 
-        # Advance all agents one step (includes sorting)
-        self.schedule.step()
-        if self.console: print('All agents stepped. (sorting complete)')
+        if self.sorting:
+            self.self_sort()
 
-        # Perform gerrymandering
         if self.gerrymandering: 
         # if not self.unhappy:     # Only gerrymander when sorting has converged
             gerrymander(self)
             if self.console: print('Gerrymandering complete.')
 
-        # Update utilities
+        # Update census data
+        self.update_census_data()
+
+        # Update agents' utilities
         self.update_utilities()
+        
+        # Print number of happy/unhappy agents
+        if self.console:
+            happy_cnt = 0
+            unhappy_cnt = 0
+            for agent in self.population:
+                if agent.is_unhappy: unhappy_cnt += 1
+                else: happy_cnt += 1
+            print(f'Happy: {happy_cnt} | Unhappy: {unhappy_cnt}')
 
         # Collect data
         self.datacollector.collect(self)

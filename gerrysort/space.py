@@ -71,6 +71,8 @@ class ElectoralDistricts(mg.GeoSpace):
         new_county_id: new county id
         new_position: new coordinates of relocation destination
         '''
+        if person.model.console: print(f"Adding {person.unique_id} to {new_county_id} ({self.county_district_map[new_county_id]}).")
+
         # Update attributes
         person.county_id = new_county_id
         person.district_id = self.county_district_map[new_county_id]
@@ -81,7 +83,7 @@ class ElectoralDistricts(mg.GeoSpace):
 
         # Add agent to map
         super().add_agents(person)
-        # person.calculate_utility()
+        # person.update_utility()
 
     def remove_person_from_county(self, person):
         '''
@@ -89,6 +91,8 @@ class ElectoralDistricts(mg.GeoSpace):
 
         person: Person agent instance
         '''
+        if person.model.console: print(f"Removing {person.unique_id} from {person.county_id} ({person.district_id}).")
+        
         # Clear attributes
         person.county_id = None
         person.district_id = None
@@ -99,12 +103,12 @@ class ElectoralDistricts(mg.GeoSpace):
 
     def get_random_district_id(self) -> str:
         return random.choice(list(self._id_district_map.keys()))
-
-    def get_district_by_id(self, district_id) -> DistrictAgent:
-        return self._id_district_map.get(district_id)
     
     def get_random_county_id(self) -> str:
         return random.choice(list(self._id_county_map.keys()))
+
+    def get_district_by_id(self, district_id) -> DistrictAgent:
+        return self._id_district_map.get(district_id)
     
     def get_county_by_id(self, county_id) -> CountyAgent:
         return self._id_county_map.get(county_id)

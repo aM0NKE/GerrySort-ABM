@@ -57,7 +57,7 @@ class PersonAgent(mg.GeoAgent):
         elif not self.is_red and county.red_pct < 0.5:
             X1 = 1
         else:
-            X1 = 0
+            X1 = 0.1
 
         # Party affilliation matching district party majority
         district = self.model.space.get_district_by_id(district_id)
@@ -66,25 +66,29 @@ class PersonAgent(mg.GeoAgent):
         elif not self.is_red and district.red_pct < 0.5:
             X2 = 1
         else:
-            X2 = 0
+            X2 = 0.1
 
         # Urbanicity matching county urbanicity
         if self.is_red and county.RUCACAT == 'rural':
             X3 = 1
         elif self.is_red and county.RUCACAT == 'small_town':
             X3 = 0.5
+        elif self.is_red and county.RUCACAT == 'large_town':
+            X3 = 0.25
         elif not self.is_red and county.RUCACAT == 'urban':
             X3 = 1
         elif not self.is_red and county.RUCACAT == 'large_town':
             X3 = 0.5
+        elif not self.is_red and county.RUCACAT == 'small_town':
+            X3 = 0.25
         else:
-            X3 = 0
+            X3 = .1
 
         # Reward/penalize capacity 
         if county.num_people < county.capacity:
             X4 = 1
         else:
-            X4 = 0
+            X4 = 0.1
 
         # Return utility
         a1, a2, a3, a4 = alpha
@@ -92,10 +96,8 @@ class PersonAgent(mg.GeoAgent):
         return utility
 
     def update_utility(self):
-        print(self.county_id, self.district_id)
-
         self.utility = self.calculate_utility(self.county_id, self.district_id)
-        # print(self.utility)
+        if self.model.console: print('Updated utility: ', self.unique_id, self.is_red, self.utility)
 
     def calculate_delta_U(self, U_new, U_current):
         """
@@ -142,6 +144,7 @@ class PersonAgent(mg.GeoAgent):
         # Create dictionary with potental moving options
         moving_options = {
             'county_id': [],
+            'district_id': [],
             'utility': [],
             'position': []
         }
@@ -165,17 +168,9 @@ class PersonAgent(mg.GeoAgent):
 
             # Store moving options
             moving_options['county_id'].append(random_county_id)
+            moving_options['district_id'].append(random_district_id)
             moving_options['position'].append(new_location)
             moving_options['utility'].append(random_county_utility)
 
         # Simulate movement
         new_utility = self.simulate_movement(moving_options, self.utility)
-
-    def step(self):
-         # TODO: check if this is scheduled correctly
-        if self.model.sorting:
-            # Check if utility is below threshold and cooldown has passed
-            if self.is_unhappy and self.model.moving_cooldown <= self.last_moved:
-                self.sort()
-            else:
-                self.last_moved += 1

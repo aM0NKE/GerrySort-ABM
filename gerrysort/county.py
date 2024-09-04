@@ -75,7 +75,3 @@ class CountyAgent(mg.GeoAgent):
 
         try: self.red_pct = self.red_cnt / self.num_people
         except ZeroDivisionError: self.red_pct = 0.5
-
-    def step(self):
-        # TODO: check if this is scheduled correctly
-        self.update_county_data()
