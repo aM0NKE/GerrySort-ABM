@@ -42,14 +42,14 @@ class MetricsElement(mesa.visualization.TextElement):
 model_params = {
     "console": mesa.visualization .Checkbox("Console Log", True),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
-    "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", False),
-    "npop": mesa.visualization.Slider("Number of Agents", 100, 100, 10000, 100),
-    "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.30, 0.00, 1.00, 0.05),
-    "beta": mesa.visualization.Slider("Beta (Temperature)", 200.0, 0.0, 200.0, 5),
-    "capacity_mul": mesa.visualization.Slider("Capacity Multiplier", 10.0, 0.0, 10.0, 0.1),
-    "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 3, 1, 30, 1),
-    "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 10, 5, 100, 5),
-    "moving_cooldown": mesa.visualization.Slider("Moving Cooldown", 0, 0, 25, 1),
+    "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
+    "npop": mesa.visualization.Slider("Number of Agents", 1000, 100, 10000, 100),
+    "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.50, 0.00, 1.00, 0.05),
+    "beta": mesa.visualization.Slider("Beta (Temperature)", 2.0, 0.0, 10.0, 1),
+    "capacity_mul": mesa.visualization.Slider("Capacity Multiplier", 1.0, 0.0, 5.0, 0.1),
+    "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 5, 5, 25, 5),
+    "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 10, 5, 35, 5),
+    "moving_cooldown": mesa.visualization.Slider("Moving Cooldown", 0, 0, 10, 1),
     # "distance_decay": mesa.visualization.Slider("Distance Decay", 0.2, 0.00, 1.0, 0.05), TODO: Part of the discounted utility
 }
 

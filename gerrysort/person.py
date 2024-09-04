@@ -57,7 +57,7 @@ class PersonAgent(mg.GeoAgent):
         elif not self.is_red and county.red_pct < 0.5:
             X1 = 1
         else:
-            X1 = 0.1
+            X1 = 0.5
 
         # Party affilliation matching district party majority
         district = self.model.space.get_district_by_id(district_id)
@@ -66,33 +66,33 @@ class PersonAgent(mg.GeoAgent):
         elif not self.is_red and district.red_pct < 0.5:
             X2 = 1
         else:
-            X2 = 0.1
+            X2 = 0.75
 
         # Urbanicity matching county urbanicity
         if self.is_red and county.RUCACAT == 'rural':
             X3 = 1
         elif self.is_red and county.RUCACAT == 'small_town':
-            X3 = 0.5
+            X3 = 0.75
         elif self.is_red and county.RUCACAT == 'large_town':
-            X3 = 0.25
+            X3 = 0.5
         elif not self.is_red and county.RUCACAT == 'urban':
             X3 = 1
         elif not self.is_red and county.RUCACAT == 'large_town':
-            X3 = 0.5
+            X3 = 0.75
         elif not self.is_red and county.RUCACAT == 'small_town':
-            X3 = 0.25
+            X3 = 0.5
         else:
-            X3 = .1
+            X3 = .25
 
         # Reward/penalize capacity 
         if county.num_people < county.capacity:
-            X4 = 1
+            X4 = 0
         else:
-            X4 = 0.1
+            X4 = 0.5
 
         # Return utility
         a1, a2, a3, a4 = alpha
-        utility = A * (X1**a1 * X2**a2 * X3**a3) * X4
+        utility = A * (X1**a1 * X2**a2 * X3**a3) - X4
         return utility
 
     def update_utility(self):
