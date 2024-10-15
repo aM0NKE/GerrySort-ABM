@@ -5,6 +5,7 @@ from gerrychain.proposals import recom
 from gerrychain.tree import bipartition_tree
 from gerrychain.constraints import contiguous
 
+import os
 import matplotlib.pyplot as plt
 import pandas as pd
 import geopandas as gpd
@@ -15,13 +16,15 @@ from tqdm import tqdm
 import random
 random.seed(42)
 
+state = 'MN'
+
 # Select MGGG States file
-input_file = 'states/MN/MN_precincts.geojson'
+input_file = os.path.join('processed_states', state, 'archive', f'{state}_PRECINCTS.geojson')
 # Set population and district columns
 pop_col = 'TOTPOP'; dist_col = 'CONGDIST'
 
 # Set output file
-output_file = 'MN_CONGDIST_ensemble_TESTING2.geojson'
+output_file = os.path.join('processed_states', state, f'{state}_CONGDIST_ensemble.geojson')
 
 # Set ensemble and batch size 
 n = 20

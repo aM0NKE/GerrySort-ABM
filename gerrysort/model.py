@@ -42,8 +42,8 @@ class GerrySort(mesa.Model):
         self.state = state
         if self.gerrymandering: self.ensemble = gpd.read_file(os.path.join('data/processed_states', state, state + '_CONGDIST_ensemble.geojson')).to_crs(self.space.crs)
         self.initial_plan = gpd.read_file(os.path.join('data/processed_states', state, state + '_CONGDIST_initial.geojson')).to_crs(self.space.crs)
-        self.state_leg_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_LEGDIST_initial.geojson')).to_crs(self.space.crs)
-        self.state_sen_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_SENDIST_initial.geojson')).to_crs(self.space.crs)
+        self.state_leg_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_LEGDIST.geojson')).to_crs(self.space.crs)
+        self.state_sen_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_SENDIST.geojson')).to_crs(self.space.crs)
         self.fitness_landscape = gpd.read_file(os.path.join('data/processed_states', state, state + '_FitnessLandscape.geojson')).to_crs(self.space.crs)
         check_crs_consistency(self)
 
