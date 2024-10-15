@@ -1,8 +1,8 @@
 import mesa_geo as mg
 
-from .person import PersonAgent
-from .district import DistrictAgent
-from .county import CountyAgent
+from ..agents.person import PersonAgent
+from ..agents.district import DistrictAgent
+from ..agents.county import CountyAgent
 
 from math import ceil
 import random

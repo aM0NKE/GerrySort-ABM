@@ -2,10 +2,10 @@ import mesa
 import mesa_geo as mg
 from shapely.geometry import box
 
-from .person import PersonAgent
-from .district import DistrictAgent
-from .county import CountyAgent
-from .model import GerrySort
+from ..agents.person import PersonAgent
+from ..agents.district import DistrictAgent
+from ..agents.county import CountyAgent
+from ..model import GerrySort
 
 class ModelParamsElement(mesa.visualization.TextElement):
     def render(self, model):

@@ -3,9 +3,9 @@ import os
 
 import mesa
 from .space import ElectoralDistricts
-from .initialization import *
-from .statistics import *
-from .redistricting_utils import *
+from .utils.initialization import *
+from .utils.statistics import *
+from .utils.redistricting import *
 
 class GerrySort(mesa.Model):
     def __init__(self, state='MN', tolarence=0.5, beta=0.0, capacity_mul=1.0, gerrymandering=True, sorting=True, npop=1000, n_proposed_maps=10, n_moving_options=10, moving_cooldown=5, distance_decay=0.5):
@@ -41,10 +41,10 @@ class GerrySort(mesa.Model):
         # Load GeoData files
         self.state = state
         if self.gerrymandering: self.ensemble = gpd.read_file('data/MN_CONGDIST_ensemble_TESTING2.geojson').to_crs(self.space.crs)
-        self.initial_plan = gpd.read_file(os.path.join('data/states', state, state + '_CONGDIST_initial.geojson')).to_crs(self.space.crs)
-        self.state_leg_map = gpd.read_file(os.path.join('data/states', state, state + '_LEGDIST_initial.geojson')).to_crs(self.space.crs)
-        self.state_sen_map = gpd.read_file(os.path.join('data/states', state, state + '_SENDIST_initial.geojson')).to_crs(self.space.crs)
-        self.fitness_landscape = gpd.read_file(os.path.join('data/states', state, state + '_FitnessLandscape.geojson')).to_crs(self.space.crs)
+        self.initial_plan = gpd.read_file(os.path.join('data/processed_states', state, state + '_CONGDIST_initial.geojson')).to_crs(self.space.crs)
+        self.state_leg_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_LEGDIST_initial.geojson')).to_crs(self.space.crs)
+        self.state_sen_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_SENDIST_initial.geojson')).to_crs(self.space.crs)
+        self.fitness_landscape = gpd.read_file(os.path.join('data/processed_states', state, state + '_FitnessLandscape.geojson')).to_crs(self.space.crs)
         check_crs_consistency(self)
 
         # Set parameters to model attributes

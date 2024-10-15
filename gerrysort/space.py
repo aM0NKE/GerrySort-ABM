@@ -3,8 +3,8 @@ from typing import Dict
 
 import mesa_geo as mg
 
-from .district import DistrictAgent
-from .county import CountyAgent
+from .agents.district import DistrictAgent
+from .agents.county import CountyAgent
 
 class ElectoralDistricts(mg.GeoSpace):
     _id_district_map: Dict[str, DistrictAgent]

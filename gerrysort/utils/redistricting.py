@@ -1,4 +1,4 @@
-from .district import DistrictAgent
+from ..agents.district import DistrictAgent
 from .statistics import *
 
 import random
