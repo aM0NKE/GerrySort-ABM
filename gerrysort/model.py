@@ -40,7 +40,7 @@ class GerrySort(mesa.Model):
 
         # Load GeoData files
         self.state = state
-        if self.gerrymandering: self.ensemble = gpd.read_file('data/MN_CONGDIST_ensemble_TESTING2.geojson').to_crs(self.space.crs)
+        if self.gerrymandering: self.ensemble = gpd.read_file(os.path.join('data/processed_states', state, state + '_CONGDIST_ensemble.geojson')).to_crs(self.space.crs)
         self.initial_plan = gpd.read_file(os.path.join('data/processed_states', state, state + '_CONGDIST_initial.geojson')).to_crs(self.space.crs)
         self.state_leg_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_LEGDIST_initial.geojson')).to_crs(self.space.crs)
         self.state_sen_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_SENDIST_initial.geojson')).to_crs(self.space.crs)
