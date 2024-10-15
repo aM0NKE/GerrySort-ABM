@@ -5,8 +5,7 @@ from math import ceil
 from shapely.geometry import Point, Polygon, MultiPolygon
 
 class DistrictAgent(mg.GeoAgent):
-
-    type: str # TODO: add three district types of electoal districts
+    type: str
     num_people: int
     red_cnt: int
     blue_cnt: int
@@ -102,7 +101,6 @@ class DistrictAgent(mg.GeoAgent):
         '''
         if isinstance(new_geometry, Polygon):
             new_geometry = MultiPolygon([new_geometry])
-
         self.geometry = new_geometry
 
     def update_district_data(self):
@@ -122,9 +120,9 @@ class DistrictAgent(mg.GeoAgent):
                 else:
                     self.blue_cnt += 1
                 # Update the district_id of the person (only if district is congressional)
-                if self.type == 'congressional':
+                if self.type == 'congressional': # TODO: Check if this can be someone else
                     person.district_id = self.unique_id
-    
+
     def update_district_color(self):
         '''
         Updates the color of the electoral district, used for the visualization.

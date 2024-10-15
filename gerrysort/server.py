@@ -40,7 +40,7 @@ class MetricsElement(mesa.visualization.TextElement):
         return f"EG: {model.efficiency_gap:.2f} | M-M: {model.mean_median:.2f} | Dec: {model.declination:.2f}"
     
 model_params = {
-    "console": mesa.visualization .Checkbox("Console Log", True),
+    "state": mesa.visualization.Choice("State", value="MN", choices=["MN", "GA", "TX"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
     "npop": mesa.visualization.Slider("Number of Agents", 1000, 100, 10000, 100),
@@ -74,12 +74,13 @@ state_senate_element = StateSenateElement()
 control_element = ControlElement()
 metrics_element = MetricsElement()
 
-lat, lon = 46.5, -93.5 # Coords for Minnesota
-map_element = mg.visualization.MapModule(schelling_draw, [lat, lon], 7, 850, 850)
+ga_lat, ga_lon = 32.2, -82.9 # Coords for GA #TODO: Make this dynamic
+mn_lat, mn_lon = 46.3, -94.2 # Coords for MN
+map_element = mg.visualization.MapModule(schelling_draw, [mn_lat, mn_lon], 7, 850, 850)
 
 happy_chart = mesa.visualization.ChartModule(
     [
-        {"Label": "unhappy", "Color": "Orange"},
+        {"Label": "unhappy", "Color": "Red"},
         {"Label": "happy",   "Color": "Green",},
     ]
 )

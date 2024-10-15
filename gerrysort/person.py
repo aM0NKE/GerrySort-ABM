@@ -1,6 +1,6 @@
 import mesa_geo as mg
 import numpy as np
-from geopy.distance import great_circle
+import random
 
 class PersonAgent(mg.GeoAgent):
     is_red: bool
@@ -26,17 +26,21 @@ class PersonAgent(mg.GeoAgent):
         '''
         super().__init__(unique_id, model, geometry, crs)
         self.is_red = is_red
+        self.is_unhappy = None
         self.district_id = district_id
         self.county_id = county_id
         self.utility = 0
         self.last_moved = float('inf')
 
-    @property
-    def is_unhappy(self):
-        '''
-        Returns false when agent is unhappy.
-        '''
-        return self.utility < self.model.tolarence
+
+    # def is_unhappy(self):
+    #     '''
+    #     Returns false when agent is unhappy.
+    #     '''
+    #     # Update utility
+    #     self.calculate_utility
+
+    #     return self.utility < self.model.tolarence
     
     def calculate_utility(self, county_id, district_id, A=1, alpha=(1, 1, 1, 1)): 
         '''
@@ -72,13 +76,13 @@ class PersonAgent(mg.GeoAgent):
         if self.is_red and county.RUCACAT == 'rural':
             X3 = 1
         elif self.is_red and county.RUCACAT == 'small_town':
-            X3 = 0.75
+            X3 = 1
         elif self.is_red and county.RUCACAT == 'large_town':
             X3 = 0.5
         elif not self.is_red and county.RUCACAT == 'urban':
             X3 = 1
         elif not self.is_red and county.RUCACAT == 'large_town':
-            X3 = 0.75
+            X3 = 1
         elif not self.is_red and county.RUCACAT == 'small_town':
             X3 = 0.5
         else:
@@ -86,18 +90,23 @@ class PersonAgent(mg.GeoAgent):
 
         # Reward/penalize capacity 
         if county.num_people < county.capacity:
-            X4 = 0
+            X4 = 1
         else:
-            X4 = 0.5
+            X4 = 0
 
         # Return utility
         a1, a2, a3, a4 = alpha
-        utility = A * (X1**a1 * X2**a2 * X3**a3) - X4
+        utility = A * (X1**a1 * X2**a2 * X3**a3)
+        # print('Utility: ', utility)
         return utility
 
     def update_utility(self):
+        '''
+        Updates the agent's utility score and checks if it is happy/unhappy.
+        '''
         self.utility = self.calculate_utility(self.county_id, self.district_id)
-        if self.model.console: print('Updated utility: ', self.unique_id, self.is_red, self.utility)
+        self.is_unhappy = self.utility < self.model.tolarence
+        # print('Utility: ', self.utility, 'Is Rep: ', self.is_red, 'Unhappy: ', self.is_unhappy, 'Tolerance: ', self.model.tolarence)
 
     def calculate_delta_U(self, U_new, U_current):
         """
@@ -130,7 +139,6 @@ class PersonAgent(mg.GeoAgent):
         """
         probabilities = self.calculate_probabilities(U_current, moving_options['utility'])
         chosen_index = np.random.choice(len(moving_options['utility']), p=probabilities)
-
         # Move to chosen location
         self.model.space.remove_person_from_county(self)
         self.model.space.add_person_to_county(self, new_county_id=moving_options['county_id'][chosen_index], new_position=moving_options['position'][chosen_index])
@@ -150,24 +158,34 @@ class PersonAgent(mg.GeoAgent):
         }
 
         # Consider an x number of random potential moving options
-        for i in range(self.model.n_moving_options):
-            # Draw a random county id and find corresponding district
-            random_county_id = self.model.space.get_random_county_id()
-            random_district_id = self.model.space.county_district_map[random_county_id]
+        option_cnt = 0
+        while option_cnt < self.model.n_moving_options:
+            # Select random county (not at capacity)
+            not_full_capacity_counties = [county for county in self.model.counties if county.num_people < county.capacity]
+            random_county = random.choice(not_full_capacity_counties)
 
+            # Check if county is at capacity
+            while random_county.num_people >= random_county.capacity:
+                continue
+            option_cnt += 1
+
+            # if random_county_id == 'Yellow Medicine':
+            #     print('Yellow Medicine')
+            #     print(random_county.num_people, '/' , random_county.capacity)
+
+            random_district_id = self.model.space.county_district_map[random_county.unique_id]
             # Return random county instance
-            random_county = self.model.space.get_county_by_id(random_county_id)
-            new_location = random_county.random_point() # Find a random point within the county
+            new_location = random_county.random_point()
 
             # Calculate discounted utility
-            random_county_utility = self.calculate_utility(random_county_id, random_district_id)
+            random_county_utility = self.calculate_utility(random_county.unique_id, random_district_id)
             # TODO: Do we consider a discounted utility based on distance to potential relocation spot?
             # MAX_DIST = 475 # normalize distance by max distance (MN: 475 miles)
             # distance = great_circle((self.geometry.y, self.geometry.x), (new_location.y, new_location.x)).miles / MAX_DIST
             # discounted_utility = random_county_utility * (self.model.distance_decay * (1 - distance))
 
             # Store moving options
-            moving_options['county_id'].append(random_county_id)
+            moving_options['county_id'].append(random_county.unique_id)
             moving_options['district_id'].append(random_district_id)
             moving_options['position'].append(new_location)
             moving_options['utility'].append(random_county_utility)

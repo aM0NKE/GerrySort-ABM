@@ -1,31 +1,26 @@
 import geopandas as gpd
+import os
 
-# Set input file path
-input_path = 'MN/MN_precincts.geojson'
-district_unit = 'MNLEGDIST'
-
-# Set output file path
-output_path = 'MN/MN_' + district_unit + '_initial.geojson'
+state = 'LA' # Set state
 
 # Open the file
-gdf = gpd.read_file(input_path)
+gdf = gpd.read_file(os.path.join(state, state + '_PRECINCTS.geojson'))
 
-# Select districts, population and voting data
-gdf_cpy = gdf.copy()
-gdf_cpy = gdf_cpy[['geometry', 'TOTPOP', district_unit, 'TOTVOT16', 'PRES16R', 'PRES16D']]
+# Create intial plans for each district unit
+district_units = ['CONGDIST', 'SENDIST', 'LEGDIST', 'COUNTY']
+for district_unit in district_units:
+    # Set output file path
+    output_path = state + '/' + state + '_' + district_unit + '_initial.geojson'
 
-# Create district polygons
-joined_gdf = gdf_cpy.dissolve(by=district_unit)
+    # Select districts, population and voting data
+    gdf_cpy = gdf.copy()
+    if district_unit != 'COUNTY':
+        gdf_cpy = gdf_cpy[['geometry', 'TOTPOP', district_unit]]
+    else:
+        gdf_cpy = gdf_cpy[['geometry', 'TOTPOP', district_unit, 'FIPS']]
 
-# Aggregate the voting data by district
-agg_columns = ['TOTPOP', 'TOTVOT16', 'PRES16R', 'PRES16D']
-summed_gdf = gdf_cpy.groupby(district_unit)[agg_columns].sum().reset_index()
+    # Create district polygons
+    joined_gdf = gdf_cpy.dissolve(by=district_unit)
 
-# Drop old voting data and merge the dissolved geometries with the aggregated voting data
-result_gdf = joined_gdf.drop(columns=agg_columns).merge(summed_gdf, on=district_unit)
-
-# Rename district unit to district
-result_gdf.rename(columns={district_unit: 'district'}, inplace=True)
-
-# Save initial plan to file
-result_gdf.to_file(output_path, driver='GeoJSON')
+    # Save initial plan to file
+    joined_gdf.to_file(output_path, driver='GeoJSON')

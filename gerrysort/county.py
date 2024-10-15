@@ -5,7 +5,6 @@ import random
 from shapely.geometry import Point, Polygon, MultiPolygon
 
 class CountyAgent(mg.GeoAgent):
-
     capacity: int
     num_people: int
     red_cnt: int
@@ -54,24 +53,24 @@ class CountyAgent(mg.GeoAgent):
             continue
         return random_point
     
-    def update_county_data(self):
+    def update_district_data(self): # TODO: Maybe can be incorporated to add/remove agents to/from county.
         '''
-        Updates the data of the county.
+        Updates the data of the electoral district.
         '''
-        # Reset counts
+        # Reset counters
         self.num_people = 0
         self.red_cnt = 0
         self.blue_cnt = 0
-        # Updated county counts
-        for person in self.model.space.agents:
-            if isinstance(person, PersonAgent) and self.geometry.contains(person.geometry):
+        # Update district counts
+        for person in self.model.population:
+            if self.geometry.contains(person.geometry):
                 self.num_people += 1
                 if person.is_red:
                     self.red_cnt += 1
                 else:
                     self.blue_cnt += 1
-            # Update the county_id of the person
-            person.county_id = self.unique_id
+            # # Update the county_id of the person
+            # person.county_id = self.unique_id
 
         try: self.red_pct = self.red_cnt / self.num_people
         except ZeroDivisionError: self.red_pct = 0.5

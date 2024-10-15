@@ -29,7 +29,7 @@ class ElectoralDistricts(mg.GeoSpace):
         for agent in districts:
             if isinstance(agent, DistrictAgent):
                 self._id_district_map[agent.unique_id] = agent
-        if agent.model.console: print(f"Added {len(districts)} districts to the space.")
+        print(f"Added {len(districts)} districts to the space.")
 
     def add_counties(self, counties):
         '''
@@ -59,9 +59,35 @@ class ElectoralDistricts(mg.GeoSpace):
             county_centroid = county.geometry.centroid
             for district in districts:
                 district = district.to_crs(county.crs)
+
                 if county_centroid.within(district.geometry):
+
+                # if geometries overlap for at least 50% of the area
+                # if county.geometry.intersection(district.geometry).area >= 0.4 * county.geometry.area:
                     self.county_district_map[county.unique_id] = district.unique_id
                     break  # Stop iteration once a match is found
+
+    def remove_person_from_county(self, person):
+        '''
+        Removes person from county for visualization and clears it's attributes.
+
+        person: Person agent instance
+        '''
+        # print(f"Removing {person.unique_id} from {person.county_id} ({person.district_id}).")
+        # Update num_pop counter
+        # print(f'Person {person.unique_id} is leaving {person.county_id} ({self.county_district_map[person.county_id]}).')
+        county = self.get_county_by_id(person.county_id)
+        # print('REMOVING PERSON')
+        # print('[BEFORE]', county.num_people, '/' , county.capacity)
+        county.num_people -= 1
+        # print('[AFTER]', county.num_people, '/' , county.capacity, '\n')
+        # county.num_people -= 1
+        # Clear attributes
+        person.county_id = None
+        person.district_id = None
+        person.geometry = None
+        # Remove agent to map
+        super().remove_agent(person)
     
     def add_person_to_county(self, person, new_county_id, new_position=None):
         '''
@@ -71,7 +97,14 @@ class ElectoralDistricts(mg.GeoSpace):
         new_county_id: new county id
         new_position: new coordinates of relocation destination
         '''
-        if person.model.console: print(f"Adding {person.unique_id} to {new_county_id} ({self.county_district_map[new_county_id]}).")
+        # print(f"Adding {person.unique_id} to {new_county_id} ({self.county_district_map[new_county_id]}).")
+        # Update num_pop counter
+        county = self._id_county_map[new_county_id]
+        # print('ADDING PERSON')
+        # print('[BEFORE]', county.num_people, '/' , county.capacity)
+        county.num_people += 1
+        # print('[AFTER]', county.num_people, '/' , county.capacity, '\n')
+
 
         # Update attributes
         person.county_id = new_county_id
@@ -84,22 +117,6 @@ class ElectoralDistricts(mg.GeoSpace):
         # Add agent to map
         super().add_agents(person)
         # person.update_utility()
-
-    def remove_person_from_county(self, person):
-        '''
-        Removes person from county for visualization and clears it's attributes.
-
-        person: Person agent instance
-        '''
-        if person.model.console: print(f"Removing {person.unique_id} from {person.county_id} ({person.district_id}).")
-        
-        # Clear attributes
-        person.county_id = None
-        person.district_id = None
-        person.geometry = None
-
-        # Remove agent to map
-        super().remove_agent(person)
 
     def get_random_district_id(self) -> str:
         return random.choice(list(self._id_district_map.keys()))
