@@ -21,7 +21,7 @@ class HappinessElement(mesa.visualization.TextElement):
     
 class CongressionalElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Projected Congressional Seats: D: {model.blue_congressional_seats} | R: {model.red_congressional_seats} | T: {model.tied_congressional_seats}"
+        return f"Projected Congressional Seats: D: {model.blue_congressional_seats} | R: {model.red_congressional_seats} | T: {model.tied_congressional_seats} (Change Map: {model.change_map})"
     
 class StateHouseElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -43,7 +43,7 @@ model_params = {
     "state": mesa.visualization.Choice("State", value="MN", choices=["MN", "GA", "TX"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
-    "npop": mesa.visualization.Slider("Number of Agents", 1000, 100, 10000, 100),
+    "npop": mesa.visualization.Slider("Number of Agents", 2500, 500, 10000, 250),
     "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.50, 0.00, 1.00, 0.05),
     "beta": mesa.visualization.Slider("Beta (Temperature)", 2.0, 0.0, 10.0, 1),
     "capacity_mul": mesa.visualization.Slider("Capacity Multiplier", 1.0, 0.0, 5.0, 0.1),

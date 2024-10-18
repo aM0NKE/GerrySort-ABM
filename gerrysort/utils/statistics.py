@@ -1,3 +1,4 @@
+import numpy as np
 from math import pi
 
 def unhappy_happy(model):
@@ -137,7 +138,6 @@ def projected_margin(model):
     else:
         model.projected_margin = 0
 
-# TODO: Reevaluate the gerrymandering metrics.    
 # Three common gerrymandering quantifications: efficiency gap, mean-median difference, and declination
 def efficiency_gap(model):
     '''
@@ -159,18 +159,24 @@ def mean_median(model):
     Return the mean-median difference of the plan and population distribution at the current step.
     '''
     # Get dem vote shares (1 - red_pct) for each district
-    dem_pct = []
-    for agent in model.USHouseDistricts:
-        dem_pct.append(1 - agent.red_pct)
+    dem_pct = [1 - agent.red_pct for agent in model.USHouseDistricts]
 
     # Sort dem vote shares over all districts
     dem_pct.sort()
 
-    # Calculate mean and median
-    median = dem_pct[len(dem_pct) // 2] # TODO: find way to take average of two middle values if even number of districts
-    mean = sum(dem_pct) / len(dem_pct)
+    # Calculate median
+    n = len(dem_pct)
+    if n % 2 == 1:
+        # Odd number of districts, take the middle one
+        median = dem_pct[n // 2]
+    else:
+        # Even number of districts, take the average of the two middle ones
+        median = (dem_pct[n // 2 - 1] + dem_pct[n // 2]) / 2
 
-    # Return mean-median difference
+    # Calculate mean
+    mean = sum(dem_pct) / n
+
+    # Store and return the mean-median difference
     model.mean_median = mean - median
 
 def declination(model):
@@ -178,26 +184,22 @@ def declination(model):
     Return the declination of the plan and population distribution at the current step.
     '''
     # Get democratic vote share for each republican and democrat districts
-    rep_districts_dem_pct = [1 - district.red_pct for district in model.USHouseDistricts if district.red_pct > 0.5]
+    rep_districts_dem_pct = [1 - district.red_pct for district in model.USHouseDistricts if district.red_pct > 0.5] # NOTE: Tied districts are not included
     dem_districts_dem_pct = [1 - district.red_pct for district in model.USHouseDistricts if district.red_pct < 0.5]
-    
-    # Sort districts by dem vote share (1 - red_pct)
+
+    # Sort districts by democratic vote share (1 - red_pct)
     rep_districts_dem_pct.sort()
     dem_districts_dem_pct.sort()
+
+    # Find the number of rep and dem districts
+    n_rep = len(rep_districts_dem_pct)
+    n_dem = len(dem_districts_dem_pct)
     
-    # Find median dem vote shares (1 - red_pct) and median district number for both districts 
-    median_rep = rep_districts_dem_pct[len(rep_districts_dem_pct) // 2] # TODO: find way to take average of two middle values if even number of districts
-    median_dem = dem_districts_dem_pct[len(dem_districts_dem_pct) // 2]
+    theta_rep = np.arctan((1 - 2 * np.mean(rep_districts_dem_pct)) * (n_rep + n_dem) / len(rep_districts_dem_pct))
+    theta_dem = np.arctan((2 * np.mean(dem_districts_dem_pct) - 1) * (n_rep + n_dem) / len(dem_districts_dem_pct))
 
-    # Find 50-50 point
-    fifty_fifty_point = len(rep_districts_dem_pct) + 0.5 # TODO: check if this correct
-
-    # Calculate slopes from median districts to fifty-fifty point
-    slope_rep = (0.5 - median_rep) / (fifty_fifty_point - median_rep) # TODO: check if this correct
-    slope_dem = (0.5 - median_dem) / (fifty_fifty_point - median_dem)
-
-    # Return declination
-    model.declination = (2 * (slope_dem - slope_rep)) / pi
+    # Calculate declination
+    model.declination = 2 * (theta_dem - theta_rep) / pi
 
 def variance(model):
     '''

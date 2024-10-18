@@ -10,8 +10,9 @@ gdf = gpd.read_file(os.path.join(state, state + '_PRECINCTS.geojson'))
 district_units = ['CONGDIST', 'SENDIST', 'LEGDIST', 'COUNTY']
 for district_unit in district_units:
     # Set output file path
-    output_path = state + '/' + state + '_' + district_unit + '_initial.geojson'
-
+    # output_path = state + '/' + state + '_' + district_unit + '_initial.geojson'
+    if district_unit == 'CONGDIST': output_path = os.path.join('processed_states', state, f'{state}_CONGDIST_initial.geojson')
+    else: output_path = os.path.join('processed_states', state, f'{state}_{district_unit}.geojson')
     # Select districts, population and voting data
     gdf_cpy = gdf.copy()
     if district_unit != 'COUNTY':

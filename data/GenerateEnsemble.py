@@ -16,10 +16,10 @@ from tqdm import tqdm
 import random
 random.seed(42)
 
-state = 'MN'
+state = 'GA'
 
 # Select MGGG States file
-input_file = os.path.join('processed_states', state, 'archive', f'{state}_PRECINCTS.geojson')
+input_file = os.path.join('processed_states', state, f'{state}_PRECINCTS.geojson')
 # Set population and district columns
 pop_col = 'TOTPOP'; dist_col = 'CONGDIST'
 

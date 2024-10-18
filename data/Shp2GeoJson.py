@@ -1,11 +1,11 @@
 import geopandas as gpd
 import os
 
-state = 'LA'
+state = 'GA'
 
 # Set input and output paths
-shp_path = "mggg_states/LA-shapefiles/LA_1519/LA_1519.shp"
-geojson_path = os.path.join(state, state + '_PRECINCTS.geojson')
+shp_path = "mggg_states/GA-shapefiles/GA_precincts/GA_precincts16.shp"
+geojson_path = os.path.join('processed_states', state, state + '_PRECINCTS.geojson')
 
 # Set district, election columns
 USCD = 'CD' # US CONGRESSIONAL DISTRICT

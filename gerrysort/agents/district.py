@@ -1,16 +1,15 @@
-from .person import PersonAgent
-
 import mesa_geo as mg
 from math import ceil
-from shapely.geometry import Point, Polygon, MultiPolygon
+from shapely.geometry import Polygon, MultiPolygon
 
 class DistrictAgent(mg.GeoAgent):
     type: str
     num_people: int
     red_cnt: int
     blue_cnt: int
-    color: str
     red_pct: float
+    blue_pct: float
+    color: str
 
     def __init__(self, unique_id, model, geometry, crs, type):
         '''
@@ -33,48 +32,9 @@ class DistrictAgent(mg.GeoAgent):
         self.num_people = 0
         self.red_cnt = 0
         self.blue_cnt = 0
+        self.red_pct = 0
+        self.blue_pct = 0
         self.color = 'Grey'
-
-    @property
-    def red_pct(self):
-        '''
-        Returns the percentage of red people in the electoral district.
-        '''
-        if self.red_cnt == 0:
-            return 0
-        elif self.blue_cnt == 0:
-            return 1
-        elif self.red_cnt == 0 and self.blue_cnt == 0: # NOTE: in case district is empty, assign as tied district.
-            return 0.5
-        else:
-            return self.red_cnt / (self.red_cnt + self.blue_cnt)
-        
-    @property 
-    def blue_pct(self):
-        '''
-        Returns the percentage of blue people in the electoral district.
-        '''
-        # if self.blue_cnt == 0:
-        #     return 0
-        # elif self.red_cnt == 0:
-        #     return 1
-        # elif self.red_cnt == 0 and self.blue_cnt == 0:
-        #     return 0.5
-        # else:
-        #     return self.blue_cnt / (self.red_cnt + self.blue_cnt)
-        return 1 - self.red_pct
-
-    @property
-    def majority(self):
-        '''
-        Returns the majority party of the electoral district.
-        '''
-        if self.red_cnt > self.blue_cnt:
-            return 'Republican'
-        elif self.red_cnt < self.blue_cnt:
-            return 'Democratic'
-        else:
-            return 'Tied'
 
     def calculate_wasted_votes(self):
         '''
@@ -82,13 +42,16 @@ class DistrictAgent(mg.GeoAgent):
         '''
         red_wasted_votes = 0
         blue_wasted_votes = 0
+
+        total_votes = self.red_cnt + self.blue_cnt
+        majority_threshold = ceil(total_votes / 2)
         
-        if self.majority == 'Republican':
-            red_wasted_votes = self.red_cnt - ceil((self.red_cnt + self.blue_cnt) / 2)
+        if self.color == 'Red':
+            red_wasted_votes = self.red_cnt - majority_threshold
             blue_wasted_votes = self.blue_cnt
-        elif self.majority == 'Democratic':
+        elif self.color == 'Blue':
             red_wasted_votes = self.red_cnt
-            blue_wasted_votes = self.blue_cnt - ceil((self.red_cnt + self.blue_cnt) / 2)
+            blue_wasted_votes = self.blue_cnt - majority_threshold
         else:
             red_wasted_votes = 0
             blue_wasted_votes = 0
@@ -122,14 +85,21 @@ class DistrictAgent(mg.GeoAgent):
                 # Update the district_id of the person (only if district is congressional)
                 if self.type == 'congressional': # TODO: Check if this can be someone else
                     person.district_id = self.unique_id
+        # Update district percentages
+        if self.num_people != 0:
+            self.red_pct = self.red_cnt / self.num_people
+            self.blue_pct = self.blue_cnt / self.num_people
+        else:
+            self.red_pct = 0
+            self.blue_pct = 0
 
     def update_district_color(self):
         '''
         Updates the color of the electoral district, used for the visualization.
         '''
-        if self.majority == 'Republican':
+        if self.red_cnt > self.blue_cnt:
             self.color = 'Red'
-        elif self.majority == 'Democratic':
+        elif self.red_cnt < self.blue_cnt:
             self.color = 'Blue'
         else:
             self.color = 'Grey'
