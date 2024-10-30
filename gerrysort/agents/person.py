@@ -88,11 +88,11 @@ class PersonAgent(mg.GeoAgent):
         else:
             X3 = .25
 
-        # Reward/penalize capacity 
-        if county.num_people < county.capacity:
-            X4 = 1
-        else:
-            X4 = 0
+        # # Reward/penalize capacity 
+        # if county.num_people < county.capacity:
+        #     X4 = 1
+        # else:
+        #     X4 = 0
 
         # Return utility
         a1, a2, a3, a4 = alpha
@@ -180,8 +180,8 @@ class PersonAgent(mg.GeoAgent):
             # Calculate discounted utility
             random_county_utility = self.calculate_utility(random_county.unique_id, random_district_id)
             # TODO: Do we consider a discounted utility based on distance to potential relocation spot?
-            # MAX_DIST = 475 # normalize distance by max distance (MN: 475 miles)
-            # distance = great_circle((self.geometry.y, self.geometry.x), (new_location.y, new_location.x)).miles / MAX_DIST
+            # MAX_DIST = 475 # normalize distance by max distance (MN: 475 miles) (Used for normalizing distance between 0-1)
+            # distance = great_circle((self.geometry.y, self.geometry.x), (new_location.y, new_location.x)).miles  / MAX_DIST
             # discounted_utility = random_county_utility * (self.model.distance_decay * (1 - distance))
 
             # Store moving options

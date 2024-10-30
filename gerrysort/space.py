@@ -29,7 +29,7 @@ class ElectoralDistricts(mg.GeoSpace):
         for agent in districts:
             if isinstance(agent, DistrictAgent):
                 self._id_district_map[agent.unique_id] = agent
-        print(f"Added {len(districts)} districts to the space.")
+        # print(f"Added {len(districts)} districts to the space.")
 
     def add_counties(self, counties):
         '''

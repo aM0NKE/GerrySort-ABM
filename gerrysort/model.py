@@ -8,7 +8,7 @@ from .utils.statistics import *
 from .utils.redistricting import *
 
 class GerrySort(mesa.Model):
-    def __init__(self, state='MN', tolarence=0.5, beta=0.0, capacity_mul=1.0, gerrymandering=True, sorting=True, npop=1000, n_proposed_maps=10, n_moving_options=10, moving_cooldown=5, distance_decay=0.5):
+    def __init__(self, state='MN', ensemble=None, initial_plan=None, state_leg_map=None, state_sen_map=None, fitness_landscape=None, max_iters=5, npop=1000, gerrymandering=True, sorting=True, tolarence=0.5, beta=0.0, n_proposed_maps=5, n_moving_options=5, moving_cooldown=5, distance_decay=0.5, capacity_mul=1.0,):
         '''
         Initialize the model with the given parameters.
 
@@ -28,11 +28,14 @@ class GerrySort(mesa.Model):
         TODO: Add assert statements after initialization and after each step!
         '''
         # Debug (set this to true to print details in console)
-        print('Initializing model...')
+        # print('Initializing model...')
 
         # Set up the schedule and space
         self.schedule = mesa.time.BaseScheduler(self) # TODO: Look into other schedulers
         self.space = ElectoralDistricts()
+        self.running = True
+        self.iter = 0
+        self.max_iters = max_iters
 
         # Set phenomona flags
         self.gerrymandering = gerrymandering
@@ -40,11 +43,11 @@ class GerrySort(mesa.Model):
 
         # Load GeoData files
         self.state = state
-        if self.gerrymandering: self.ensemble = gpd.read_file(os.path.join('data/processed_states', state, state + '_CONGDIST_ensemble.geojson')).to_crs(self.space.crs)
-        self.initial_plan = gpd.read_file(os.path.join('data/processed_states', state, state + '_CONGDIST_initial.geojson')).to_crs(self.space.crs)
-        self.state_leg_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_LEGDIST.geojson')).to_crs(self.space.crs)
-        self.state_sen_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_SENDIST.geojson')).to_crs(self.space.crs)
-        self.fitness_landscape = gpd.read_file(os.path.join('data/processed_states', state, state + '_FitnessLandscape.geojson')).to_crs(self.space.crs)
+        self.ensemble = ensemble.to_crs(self.space.crs)
+        self.initial_plan = initial_plan.to_crs(self.space.crs)
+        self.state_leg_map = state_leg_map.to_crs(self.space.crs)
+        self.state_sen_map = state_sen_map.to_crs(self.space.crs)
+        self.fitness_landscape = fitness_landscape.to_crs(self.space.crs)
         check_crs_consistency(self)
 
         # Set parameters to model attributes
@@ -133,28 +136,28 @@ class GerrySort(mesa.Model):
         # Setup datacollector and collect data
         self.datacollector.collect(self)
         # Print all statistics
-        print('Statistics:') # TODO: Compare intial statistics with real data
-        print(f'\tUnhappy: {self.unhappy} | Unhappy Red: {self.unhappy_red} | Unhappy Blue: {self.unhappy_blue}')
-        print(f'\tHappy: {self.happy} | Happy Red: {self.happy_red} | Happy Blue: {self.happy_blue}')
-        print(f'\tRed Congressional Seats: {self.red_congressional_seats} | Blue Congressional Seats: {self.blue_congressional_seats} | Tied Congressional Seats: {self.tied_congressional_seats}')
-        print(f'\tPopulation counts: {[district.num_people for district in self.USHouseDistricts]}')
-        print(f'\tVariance: {self.variance}')
-        print(f'\tRed State House Seats: {self.red_state_house_seats} | Blue State House Seats: {self.blue_state_house_seats} | Tied State House Seats: {self.tied_state_house_seats}')
-        print(f'\tRed State Senate Seats: {self.red_state_senate_seats} | Blue State Senate Seats: {self.blue_state_senate_seats} | Tied State Senate Seats: {self.tied_state_senate_seats}')
-        print(f'\tEfficiency Gap: {self.efficiency_gap}')
-        print(f'\tMean Median: {self.mean_median}')
-        print(f'\tDeclination: {self.declination}')
-        print(f'\tControl: {self.control}')
-        print(f'\tProjected Winner: {self.projected_winner}')
-        print(f'\tProjected Margin: {self.projected_margin}')
-        print(f'\tNumber of Moves: {self.n_moves}')
+        # print('Statistics:') # TODO: Compare intial statistics with real data
+        # print(f'\tUnhappy: {self.unhappy} | Unhappy Red: {self.unhappy_red} | Unhappy Blue: {self.unhappy_blue}')
+        # print(f'\tHappy: {self.happy} | Happy Red: {self.happy_red} | Happy Blue: {self.happy_blue}')
+        # print(f'\tRed Congressional Seats: {self.red_congressional_seats} | Blue Congressional Seats: {self.blue_congressional_seats} | Tied Congressional Seats: {self.tied_congressional_seats}')
+        # print(f'\tPopulation counts: {[district.num_people for district in self.USHouseDistricts]}')
+        # print(f'\tVariance: {self.variance}')
+        # print(f'\tRed State House Seats: {self.red_state_house_seats} | Blue State House Seats: {self.blue_state_house_seats} | Tied State House Seats: {self.tied_state_house_seats}')
+        # print(f'\tRed State Senate Seats: {self.red_state_senate_seats} | Blue State Senate Seats: {self.blue_state_senate_seats} | Tied State Senate Seats: {self.tied_state_senate_seats}')
+        # print(f'\tEfficiency Gap: {self.efficiency_gap}')
+        # print(f'\tMean Median: {self.mean_median}')
+        # print(f'\tDeclination: {self.declination}')
+        # print(f'\tControl: {self.control}')
+        # print(f'\tProjected Winner: {self.projected_winner}')
+        # print(f'\tProjected Margin: {self.projected_margin}')
+        # print(f'\tNumber of Moves: {self.n_moves}')
         # Print distribution of person.county_id
-        print('County distribution:')
-        dist = {county.unique_id: 0 for county in self.counties}
-        for person in self.population:
-            dist[person.county_id] += 1
-        print(dist)
-        print('Model initialized!')
+        # print('County distribution:')
+        # dist = {county.unique_id: 0 for county in self.counties}
+        # for person in self.population:
+        #     dist[person.county_id] += 1
+        # print(dist)
+        # print('Model initialized!')
 
     def update_statistics(model, statistics=[unhappy_happy, n_moves, 
                                          red_congressional_seats, blue_congressional_seats, tied_congressional_seats, 
@@ -228,19 +231,19 @@ class GerrySort(mesa.Model):
         if self.control == 'Republican':
             # Select plan with most red districts
             best_plan = max(eval_results, key=lambda x: eval_results[x]['red_congressional_seats'])
-            print('\nBest Republican plan:', best_plan)
-            print('Republican state, maximizing red districts')    
+            # print('\nBest Republican plan:', best_plan)
+            # print('Republican state, maximizing red districts')    
         elif self.control == 'Democratic':
             # Select plan that most blue districts
             best_plan = max(eval_results, key=lambda x: eval_results[x]['blue_congressional_seats'])
-            print('\nBest Democratic plan:', best_plan)
-            print('Democrart state, maximizing blue districts')
+            # print('\nBest Democratic plan:', best_plan)
+            # print('Democrart state, maximizing blue districts')
         # Or, in case of a tie, select the plan that minimizes efficiency gap
         elif self.control == 'Tied':
             # Select plan with efficiency gap closest to 0 (fairness)
             best_plan = min(eval_results, key=lambda x: abs(eval_results[x]['efficiency_gap']))
-            print('\nBest plan:', best_plan)
-            print('Tied state, minimizing efficiency gap')
+            # print('\nBest plan:', best_plan)
+            # print('Tied state, minimizing efficiency gap')
 
         # Update the model with the best plan
         redistrict(self, eval_results[best_plan]['geometry'])
@@ -249,17 +252,17 @@ class GerrySort(mesa.Model):
         change_map(self, eval_results['-1'], eval_results[best_plan])
 
     def step(self):
-        print('------------------------------------')
+        # print('------------------------------------')
         self.control = self.projected_winner
 
         if self.sorting:
             self.self_sort()
-            print('Sorting complete.')
+            # print('Sorting complete.')
 
         if self.gerrymandering: 
         # if not self.unhappy:     # Only gerrymander when sorting has converged
             self.gerrymander()
-            print('Gerrymandering complete.')
+            # print('Gerrymandering complete.')
 
         # Update census data
         self.update_census_data()
@@ -270,31 +273,38 @@ class GerrySort(mesa.Model):
         # Update and collect data
         self.update_statistics()
         self.datacollector.collect(self)
+
+        self.iter += 1
         
         # Print some model info
-        print('Statistics:')
-        print(f'\tUnhappy: {self.unhappy} | Unhappy Red: {self.unhappy_red} | Unhappy Blue: {self.unhappy_blue}')
-        print(f'\tHappy: {self.happy} | Happy Red: {self.happy_red} | Happy Blue: {self.happy_blue}')
-        print(f'\tRed Congressional Seats: {self.red_congressional_seats} | Blue Congressional Seats: {self.blue_congressional_seats} | Tied Congressional Seats: {self.tied_congressional_seats}')
-        print(f'\tPopulation counts: {[district.num_people for district in self.USHouseDistricts]}')
-        print(f'\tVariance: {self.variance}')
-        print(f'\tRed State House Seats: {self.red_state_house_seats} | Blue State House Seats: {self.blue_state_house_seats} | Tied State House Seats: {self.tied_state_house_seats}')
-        print(f'\tRed State Senate Seats: {self.red_state_senate_seats} | Blue State Senate Seats: {self.blue_state_senate_seats} | Tied State Senate Seats: {self.tied_state_senate_seats}')
-        print(f'\tEfficiency Gap: {self.efficiency_gap}')
-        print(f'\tMean Median: {self.mean_median}')
-        print(f'\tDeclination: {self.declination}')
-        print(f'\tControl: {self.control}')
-        print(f'\tProjected Winner: {self.projected_winner}')
-        print(f'\tProjected Margin: {self.projected_margin}')
-        print(f'\tNumber of Moves: {self.n_moves}')
-        print(f'\tChange in Map: {self.change_map}')
-        print('Capacity counties:')
-        [print(f'\t{county.unique_id}: {county.num_people}/{county.capacity}') for county in self.counties]
+        # print('Statistics:')
+        # print(f'\tUnhappy: {self.unhappy} | Unhappy Red: {self.unhappy_red} | Unhappy Blue: {self.unhappy_blue}')
+        # print(f'\tHappy: {self.happy} | Happy Red: {self.happy_red} | Happy Blue: {self.happy_blue}')
+        # print(f'\tRed Congressional Seats: {self.red_congressional_seats} | Blue Congressional Seats: {self.blue_congressional_seats} | Tied Congressional Seats: {self.tied_congressional_seats}')
+        # print(f'\tPopulation counts: {[district.num_people for district in self.USHouseDistricts]}')
+        # print(f'\tVariance: {self.variance}')
+        # print(f'\tRed State House Seats: {self.red_state_house_seats} | Blue State House Seats: {self.blue_state_house_seats} | Tied State House Seats: {self.tied_state_house_seats}')
+        # print(f'\tRed State Senate Seats: {self.red_state_senate_seats} | Blue State Senate Seats: {self.blue_state_senate_seats} | Tied State Senate Seats: {self.tied_state_senate_seats}')
+        # print(f'\tEfficiency Gap: {self.efficiency_gap}')
+        # print(f'\tMean Median: {self.mean_median}')
+        # print(f'\tDeclination: {self.declination}')
+        # print(f'\tControl: {self.control}')
+        # print(f'\tProjected Winner: {self.projected_winner}')
+        # print(f'\tProjected Margin: {self.projected_margin}')
+        # print(f'\tNumber of Moves: {self.n_moves}')
+        # print(f'\tChange in Map: {self.change_map}')
+        # print('Capacity counties:')
+        # [print(f'\t{county.unique_id}: {county.num_people}/{county.capacity}') for county in self.counties]
         # Print distribution of person.county_id
-        print('County distribution:')
-        dist = {county.unique_id: 0 for county in self.counties}
-        for person in self.population:
-            dist[person.county_id] += 1
-        print(dist)
-        print('Model advanced!')
-        print('------------------------------------')
+        # print('County distribution:')
+        # dist = {county.unique_id: 0 for county in self.counties}
+        # for person in self.population:
+        #     dist[person.county_id] += 1
+        # print(dist)
+        # If energy (total moves and change in map) is zero, then the model has converged
+        # if self.n_moves == 0 and self.change_map == 0 or self.iter >= self.max_iters:
+        if self.iter >= self.max_iters:
+            # print('Model converged! (t={})'.format(self.time))
+            self.running = False
+        # print('Model advanced!')
+        # print('------------------------------------')

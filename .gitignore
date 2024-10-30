@@ -160,6 +160,7 @@ cython_debug/
 #.idea/
 
 # Folders
+.idea/
 data/*.geojson
 data/processed_states/
 data/mggg_states/
