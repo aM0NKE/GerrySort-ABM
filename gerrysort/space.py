@@ -73,15 +73,13 @@ class ElectoralDistricts(mg.GeoSpace):
 
         person: Person agent instance
         '''
-        # print(f"Removing {person.unique_id} from {person.county_id} ({person.district_id}).")
         # Update num_pop counter
-        # print(f'Person {person.unique_id} is leaving {person.county_id} ({self.county_district_map[person.county_id]}).')
+        # print(f'Removing person {person.unique_id} from {person.county_id} ({self.county_district_map[person.county_id]}).')
         county = self.get_county_by_id(person.county_id)
         # print('REMOVING PERSON')
         # print('[BEFORE]', county.num_people, '/' , county.capacity)
         county.num_people -= 1
         # print('[AFTER]', county.num_people, '/' , county.capacity, '\n')
-        # county.num_people -= 1
         # Clear attributes
         person.county_id = None
         person.district_id = None
@@ -105,7 +103,6 @@ class ElectoralDistricts(mg.GeoSpace):
         county.num_people += 1
         # print('[AFTER]', county.num_people, '/' , county.capacity, '\n')
 
-
         # Update attributes
         person.county_id = new_county_id
         person.district_id = self.county_district_map[new_county_id]
@@ -116,7 +113,6 @@ class ElectoralDistricts(mg.GeoSpace):
 
         # Add agent to map
         super().add_agents(person)
-        # person.update_utility()
 
     def get_random_district_id(self) -> str:
         return random.choice(list(self._id_district_map.keys()))

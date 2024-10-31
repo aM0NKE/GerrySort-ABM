@@ -1,5 +1,6 @@
 import numpy as np
 from math import pi
+import geopandas as gpd
 
 def unhappy_happy(model):
     '''
@@ -24,16 +25,6 @@ def unhappy_happy(model):
                 model.happy_red += 1
             else:
                 model.happy_blue += 1
-
-def n_moves(model):
-    '''
-    Return the number of agents that have moved in the current step.
-    '''
-    n_moves = 0
-    for agent in model.population:
-        if agent.last_moved == 0:
-            n_moves += 1
-    model.n_moves = n_moves
 
 def red_congressional_seats(model):
     '''
@@ -118,23 +109,40 @@ def projected_winner(model):
     Returns the party that has both a majority in state house and senate.
     (Returns 'Tied' if no party has a majority in both chambers)
     '''
-    if model.red_state_house_seats > model.blue_state_house_seats:
-        if model.red_state_senate_seats > model.blue_state_senate_seats:
-            model.projected_winner = 'Republican'
-    elif model.red_state_house_seats < model.blue_state_house_seats:
-        if model.red_state_senate_seats < model.blue_state_senate_seats:
-            model.projected_winner = 'Democratic'
+    # if model.red_state_house_seats > model.blue_state_house_seats:
+    #     if model.red_state_senate_seats > model.blue_state_senate_seats:
+    #         model.projected_winner = 'Republican'
+    # elif model.red_state_house_seats < model.blue_state_house_seats:
+    #     if model.red_state_senate_seats < model.blue_state_senate_seats:
+    #         model.projected_winner = 'Democratic'
+    # else:
+    #     model.projected_winner = 'Tied'
+
+    # NOTE: Alternative option (only considers the US House)
+    if model.red_congressional_seats > model.blue_congressional_seats:
+        model.projected_winner = 'Republican'
+    elif model.red_congressional_seats < model.blue_congressional_seats:
+        model.projected_winner = 'Democratic'
     else:
         model.projected_winner = 'Tied'
+    
 
 def projected_margin(model):
     '''
     Returns the margin of the projected winner in the state.
     '''
+    # if model.projected_winner == 'Republican':
+    #     model.projected_margin = (model.red_state_house_seats - model.blue_state_house_seats) + (model.red_state_senate_seats - model.blue_state_senate_seats)
+    # elif model.projected_winner == 'Democratic':
+    #     model.projected_margin = (model.blue_state_house_seats - model.red_state_house_seats) + (model.blue_state_senate_seats - model.red_state_senate_seats)
+    # else:
+    #     model.projected_margin = 0
+
+    # NOTE: Alternative option (only considers the US House)
     if model.projected_winner == 'Republican':
-        model.projected_margin = (model.red_state_house_seats - model.blue_state_house_seats) + (model.red_state_senate_seats - model.blue_state_senate_seats)
+        model.projected_margin = model.red_congressional_seats - model.blue_congressional_seats
     elif model.projected_winner == 'Democratic':
-        model.projected_margin = (model.blue_state_house_seats - model.red_state_house_seats) + (model.blue_state_senate_seats - model.red_state_senate_seats)
+        model.projected_margin = model.blue_congressional_seats - model.red_congressional_seats
     else:
         model.projected_margin = 0
 
@@ -215,8 +223,17 @@ def change_map(model, old_map, new_map):
     Calculate the change in map square kilometers per district (energy) between two maps.
     '''
     model.change_map = 0
+
     for i in range(model.num_USHouseDistricts):
-        old_map_district_area = old_map['geometry'][i].area # TODO: Check the units of the area
-        new_map_district_area = new_map['geometry'][i].area
+        # Wrap each geometry in a GeoSeries and reproject to a meter-based CRS
+        old_geom = gpd.GeoSeries([old_map['geometry'][i]], crs="EPSG:4326").to_crs("EPSG:3857")
+        new_geom = gpd.GeoSeries([new_map['geometry'][i]], crs="EPSG:4326").to_crs("EPSG:3857")
+        
+        # Calculate area in square miles
+        old_map_district_area = old_geom.area.iloc[0] / 2.59e+6  # square miles
+        new_map_district_area = new_geom.area.iloc[0] / 2.59e+6  # square miles
+        
+        # Calculate the change in area and add to total change
         district_change = abs(new_map_district_area - old_map_district_area)
         model.change_map += district_change
+    model.change_map /= model.num_USHouseDistricts

@@ -3,21 +3,23 @@ import os
 
 from gerrysort.model import GerrySort
 
+debug = True
+
 # Set number of experiment trials
-trials = 5
+trials = 1
 
 # Set the parameters for the model
 state = 'MN'
 max_iters = 5
-npop=5800               # 5,800,000 people in MN
+npop=500               # 5,800,000 people in MN
 gerrymandering=True
 sorting=True
 tolarence=0.5
-beta=0.0                # O means that every agent will maximize their utility (no randomness)
+beta=100.0                # O means that moving decision is totally random
 n_proposed_maps=5
-n_moving_options=10
-moving_cooldown=5
-distance_decay=0.5
+n_moving_options=5
+moving_cooldown=0
+distance_decay=1.0
 capacity_mul=1.0
 
 # Open the data
@@ -30,6 +32,7 @@ fitness_landscape = gpd.read_file(os.path.join('data/processed_states', state, s
 for i in range(trials):
     # Create the model
     model = GerrySort(
+        debug=debug,
         state=state,
         ensemble=ensemble,
         initial_plan=initial_plan,

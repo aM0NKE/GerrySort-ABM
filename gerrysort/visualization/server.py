@@ -1,8 +1,5 @@
 import mesa
 import mesa_geo as mg
-from shapely.geometry import box
-import geopandas as gpd
-import os
 
 from ..agents.person import PersonAgent
 from ..agents.district import DistrictAgent
@@ -43,22 +40,17 @@ class MetricsElement(mesa.visualization.TextElement):
     
 model_params = {
     "state": mesa.visualization.Choice("State", value="MN", choices=["MN"]),
-    "ensemble": gpd.read_file(os.path.join('data/processed_states', 'MN', 'MN' + '_CONGDIST_ensemble.geojson')),
-    "initial_plan": gpd.read_file(os.path.join('data/processed_states', 'MN', 'MN' + '_CONGDIST_initial.geojson')),
-    "state_leg_map": gpd.read_file(os.path.join('data/processed_states', 'MN', 'MN' + '_LEGDIST.geojson')),
-    "state_sen_map": gpd.read_file(os.path.join('data/processed_states', 'MN', 'MN' + '_SENDIST.geojson')),
-    "fitness_landscape": gpd.read_file(os.path.join('data/processed_states', 'MN', 'MN' + '_FitnessLandscape.geojson')),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
-    "max_iters": mesa.visualization.Slider("Max Iterations", 5, 1, 10, 1),
+    "max_iters": mesa.visualization.Slider("Max Iterations", 15, 5, 100, 5),
     "npop": mesa.visualization.Slider("Number of Agents", 2500, 500, 10000, 250),
     "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.50, 0.00, 1.00, 0.05),
-    "beta": mesa.visualization.Slider("Beta (Temperature)", 0.0, 0.0, 10.0, 1),
+    "beta": mesa.visualization.Slider("Beta (Temperature)", 100.0, 0.0, 100.0, 10),
     "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 5, 5, 25, 5),
     "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 10, 5, 35, 5),
+    "distance_decay": mesa.visualization.Slider("Distance Decay", 0.0, 0.0, 1.0, 0.1), # TODO: Part of the discounted utility
     "moving_cooldown": mesa.visualization.Slider("Moving Cooldown", 0, 0, 10, 1),
     "capacity_mul": mesa.visualization.Slider("Capacity Multiplier", 1.0, 0.0, 5.0, 0.1),
-    # "distance_decay": mesa.visualization.Slider("Distance Decay", 0.2, 0.00, 1.0, 0.05), TODO: Part of the discounted utility
 }
 
 def schelling_draw(agent):
@@ -124,9 +116,9 @@ metrics_chart = mesa.visualization.ChartModule(
 server = mesa.visualization.ModularServer(
     GerrySort,
     [model_params_element, map_element, demographics_element, happy_chart, happiness_element, 
-     congressional_seat_share_chart, congressional_element, 
-     state_house_seat_share_chart,  state_house_element, 
-     state_senate_seat_share_chart, state_senate_element, control_element, 
+     congressional_seat_share_chart, congressional_element, control_element,
+    #  state_house_seat_share_chart,  state_house_element, 
+    #  state_senate_seat_share_chart, state_senate_element, control_element, 
      metrics_chart, metrics_element],
     "GerrySort",
     model_params,

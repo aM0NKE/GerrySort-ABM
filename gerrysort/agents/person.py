@@ -1,6 +1,7 @@
 import mesa_geo as mg
 import numpy as np
 import random
+from geopy.distance import great_circle
 
 class PersonAgent(mg.GeoAgent):
     is_red: bool
@@ -31,16 +32,6 @@ class PersonAgent(mg.GeoAgent):
         self.county_id = county_id
         self.utility = 0
         self.last_moved = float('inf')
-
-
-    # def is_unhappy(self):
-    #     '''
-    #     Returns false when agent is unhappy.
-    #     '''
-    #     # Update utility
-    #     self.calculate_utility
-
-    #     return self.utility < self.model.tolarence
     
     def calculate_utility(self, county_id, district_id, A=1, alpha=(1, 1, 1, 1)): 
         '''
@@ -88,16 +79,9 @@ class PersonAgent(mg.GeoAgent):
         else:
             X3 = .25
 
-        # # Reward/penalize capacity 
-        # if county.num_people < county.capacity:
-        #     X4 = 1
-        # else:
-        #     X4 = 0
-
         # Return utility
         a1, a2, a3, a4 = alpha
         utility = A * (X1**a1 * X2**a2 * X3**a3)
-        # print('Utility: ', utility)
         return utility
 
     def update_utility(self):
@@ -137,31 +121,46 @@ class PersonAgent(mg.GeoAgent):
         moving_options: dictionary storing id, utility, and position of potential moving options
         U_current: utility value of the current location
         """
-        probabilities = self.calculate_probabilities(U_current, moving_options['utility'])
-        chosen_index = np.random.choice(len(moving_options['utility']), p=probabilities)
-        # Move to chosen location
-        self.model.space.remove_person_from_county(self)
-        self.model.space.add_person_to_county(self, new_county_id=moving_options['county_id'][chosen_index], new_position=moving_options['position'][chosen_index])
-        self.last_moved = 0
-        return moving_options['utility'][chosen_index]
+        potential_utilities = [option['utility'] for option in moving_options.values()]
+        probabilities = self.calculate_probabilities(U_current, potential_utilities)
+        
+        chosen_key = np.random.choice(list(moving_options.keys()), p=probabilities)
+        chosen_option = moving_options[chosen_key]
+
+        if chosen_key != -1:
+            self.model.space.remove_person_from_county(self)
+            self.model.space.add_person_to_county(
+                    self,
+                    new_county_id=chosen_option['county_id'],
+                    new_position=chosen_option['position']
+                )            
+            self.last_moved = 0
+            self.model.n_moves += 1
+
+        # if self.model.debug:
+        #     print('\t\tPotential Utilities: ', potential_utilities)
+        #     print('\t\tProbabilities: ', probabilities)
+        #     print('\t\tChosen Key: ', chosen_key)
 
     def sort(self):
         '''
         Simulates the self-sorting phenomonon.
         '''
         # Create dictionary with potental moving options
-        moving_options = {
-            'county_id': [],
-            'district_id': [],
-            'utility': [],
-            'position': []
+        moving_options = {}
+        moving_options['-1'] = {
+            'county_id': self.county_id,
+            'district_id': self.district_id,
+            'utility': self.utility,
+            'position': self.geometry
         }
 
         # Consider an x number of random potential moving options
         option_cnt = 0
         while option_cnt < self.model.n_moving_options:
             # Select random county (not at capacity)
-            not_full_capacity_counties = [county for county in self.model.counties if county.num_people < county.capacity]
+            not_full_capacity_counties = [county for county in self.model.counties if county.num_people < county.capacity and county.unique_id != self.county_id]
+            # Filter out current county
             random_county = random.choice(not_full_capacity_counties)
 
             # Check if county is at capacity
@@ -169,26 +168,24 @@ class PersonAgent(mg.GeoAgent):
                 continue
             option_cnt += 1
 
-            # if random_county_id == 'Yellow Medicine':
-            #     print('Yellow Medicine')
-            #     print(random_county.num_people, '/' , random_county.capacity)
-
+            # Find random county instance and generate random point in county
             random_district_id = self.model.space.county_district_map[random_county.unique_id]
-            # Return random county instance
             new_location = random_county.random_point()
 
             # Calculate discounted utility
             random_county_utility = self.calculate_utility(random_county.unique_id, random_district_id)
             # TODO: Do we consider a discounted utility based on distance to potential relocation spot?
-            # MAX_DIST = 475 # normalize distance by max distance (MN: 475 miles) (Used for normalizing distance between 0-1)
-            # distance = great_circle((self.geometry.y, self.geometry.x), (new_location.y, new_location.x)).miles  / MAX_DIST
-            # discounted_utility = random_county_utility * (self.model.distance_decay * (1 - distance))
+            MAX_DIST = 475 # normalize distance by max distance (MN: 475 miles) (Used for normalizing distance between 0-1)
+            distance = great_circle((self.geometry.y, self.geometry.x), (new_location.y, new_location.x)).miles  / MAX_DIST
+            discounted_utility = random_county_utility * (1 - (self.model.distance_decay * distance)) # DONE: Reformulated this! prev: random_county_utility*(distance_decay*(1-distance))
 
             # Store moving options
-            moving_options['county_id'].append(random_county.unique_id)
-            moving_options['district_id'].append(random_district_id)
-            moving_options['position'].append(new_location)
-            moving_options['utility'].append(random_county_utility)
-
+            moving_options[f'{option_cnt}'] = {
+                'county_id': random_county.unique_id,
+                'district_id': random_district_id,
+                'utility': discounted_utility,
+                'position': new_location
+            }
+        
         # Simulate movement
-        new_utility = self.simulate_movement(moving_options, self.utility)
+        self.simulate_movement(moving_options, self.utility)
