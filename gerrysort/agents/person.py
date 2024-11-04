@@ -127,7 +127,7 @@ class PersonAgent(mg.GeoAgent):
         chosen_key = np.random.choice(list(moving_options.keys()), p=probabilities)
         chosen_option = moving_options[chosen_key]
 
-        if chosen_key != -1:
+        if chosen_key != '-1':
             self.model.space.remove_person_from_county(self)
             self.model.space.add_person_to_county(
                     self,
@@ -135,7 +135,7 @@ class PersonAgent(mg.GeoAgent):
                     new_position=chosen_option['position']
                 )            
             self.last_moved = 0
-            self.model.n_moves += 1
+            self.model.total_moves += 1
 
         # if self.model.debug:
         #     print('\t\tPotential Utilities: ', potential_utilities)

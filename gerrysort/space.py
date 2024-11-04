@@ -63,7 +63,7 @@ class ElectoralDistricts(mg.GeoSpace):
                 if county_centroid.within(district.geometry):
 
                 # if geometries overlap for at least 50% of the area
-                # if county.geometry.intersection(district.geometry).area >= 0.4 * county.geometry.area:
+                # if county.geometry.intersection(district.geometry).area >= 0.01 * county.geometry.area: # TODO: CHECK THIS CONDITION!
                     self.county_district_map[county.unique_id] = district.unique_id
                     break  # Stop iteration once a match is found
 

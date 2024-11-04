@@ -16,7 +16,7 @@ class DemographicsElement(mesa.visualization.TextElement):
 
 class HappinessElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Happy agents: {model.happy} | Unhappy: {model.unhappy} (Total moves: {model.n_moves})"
+        return f"Happy agents: {model.happy} | Unhappy: {model.unhappy} (Total moves: {model.total_moves})"
     
 class CongressionalElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -39,7 +39,7 @@ class MetricsElement(mesa.visualization.TextElement):
         return f"EG: {model.efficiency_gap:.2f} | M-M: {model.mean_median:.2f} | Dec: {model.declination:.2f}"
     
 model_params = {
-    "state": mesa.visualization.Choice("State", value="MN", choices=["MN"]),
+    "state": mesa.visualization.Choice("State", value="PA", choices=["MN", "WI", "MI", "PA", "GA", "LA", "TX"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
     "max_iters": mesa.visualization.Slider("Max Iterations", 15, 5, 100, 5),
@@ -48,7 +48,7 @@ model_params = {
     "beta": mesa.visualization.Slider("Beta (Temperature)", 100.0, 0.0, 100.0, 10),
     "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 5, 5, 25, 5),
     "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 10, 5, 35, 5),
-    "distance_decay": mesa.visualization.Slider("Distance Decay", 0.0, 0.0, 1.0, 0.1), # TODO: Part of the discounted utility
+    "distance_decay": mesa.visualization.Slider("Distance Decay", 0.0, 0.0, 1.0, 0.1),
     "moving_cooldown": mesa.visualization.Slider("Moving Cooldown", 0, 0, 10, 1),
     "capacity_mul": mesa.visualization.Slider("Capacity Multiplier", 1.0, 0.0, 5.0, 0.1),
 }
@@ -74,9 +74,10 @@ state_senate_element = StateSenateElement()
 control_element = ControlElement()
 metrics_element = MetricsElement()
 
+us_lat, us_lon = 39.8, -98.6 # Coords for US
 ga_lat, ga_lon = 32.2, -82.9 # Coords for GA #TODO: Make this dynamic
 mn_lat, mn_lon = 46.3, -94.2 # Coords for MN
-map_element = mg.visualization.MapModule(schelling_draw, [mn_lat, mn_lon], 7, 850, 850)
+map_element = mg.visualization.MapModule(schelling_draw, [us_lat, us_lon], 4, 850, 850)
 
 happy_chart = mesa.visualization.ChartModule(
     [

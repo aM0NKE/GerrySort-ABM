@@ -16,7 +16,7 @@ from tqdm import tqdm
 import random
 random.seed(42)
 
-state = 'GA'
+state = 'NC'
 
 # Select MGGG States file
 input_file = os.path.join('processed_states', state, f'{state}_PRECINCTS.geojson')
@@ -27,15 +27,17 @@ pop_col = 'TOTPOP'; dist_col = 'CONGDIST'
 output_file = os.path.join('processed_states', state, f'{state}_CONGDIST_ensemble.geojson')
 
 # Set ensemble and batch size 
-n = 20
-batch_size = 20
+n = 50
+batch_size = 50
 
 print("Setting up the Markov chain...")
 
 # Set up the graph
-gdf = gpd.read_file(input_file)
+gdf = gpd.read_file(input_file).to_crs(epsg=26915) # covert to 26915
 # Rename district values to 'congressional-' + district number
 gdf['CONGDIST'] = 'congressional-' + gdf['CONGDIST'].astype(str)
+# Attempt to repair invalid geometries using buffer(0)
+gdf['geometry'] = gdf['geometry'].buffer(0)
 
 graph = Graph.from_geodataframe(gdf)
 
@@ -65,6 +67,9 @@ initial_partition = GeographicPartition(
 
 # Calculate the ideal population for each district
 ideal_population = sum(initial_partition["population"].values()) / len(initial_partition)
+print("Total population: ", sum(initial_partition["population"].values()))
+print("Number of districts: ", len(initial_partition))
+print("Ideal population: ", ideal_population)
 
 # Set up proposal
 proposal = partial(
@@ -78,7 +83,8 @@ proposal = partial(
 # Set up Markov chain
 recom_chain = MarkovChain(
     proposal=proposal,
-    constraints=[contiguous],
+    constraints=[],
+    # constraints=[contiguous],
     accept=accept.always_accept,
     initial_state=initial_partition,
     total_steps=n,
@@ -89,15 +95,10 @@ plans_list = []  # List to collect all plans
 
 # Run the Markov chain
 print("Running the Markov chain...")
-# batch_results = []
-
 for i, partition in enumerate(recom_chain.with_progress_bar()):
     # Collect district assignments for each partition
     plan = pd.Series([partition.assignment[n] for n in graph.nodes], name=f'plan_{i}')
     plans_list.append(plan)
-    
-    # # Store district plan
-    # gdf[f'plan_{i}'] = [partition.assignment[n] for n in graph.nodes]
 
     # Store district data
     for district_name in partition.perimeter.keys():

@@ -78,7 +78,7 @@ class GerrySort(mesa.Model):
         self.happy = 0
         self.happy_blue = 0
         self.happy_red = 0
-        self.n_moves = 0
+        self.total_moves = 0
         self.red_congressional_seats = 0
         self.blue_congressional_seats = 0
         self.tied_congressional_seats = 0
@@ -119,7 +119,7 @@ class GerrySort(mesa.Model):
             'projected_winner': 'projected_winner',
             'projected_margin': 'projected_margin',
             'control': 'control',
-            'n_moves': 'n_moves',
+            'total_moves': 'total_moves',
             'change_map': 'change_map'
             })
 
@@ -162,7 +162,7 @@ class GerrySort(mesa.Model):
             print(f'\tControl: {self.control}')
             print(f'\tProjected Winner: {self.projected_winner}')
             print(f'\tProjected Margin: {self.projected_margin}')
-            print(f'\tNumber of Moves: {self.n_moves}')
+            print(f'\tNumber of Moves: {self.total_moves}')
             # Print distribution of person.county_id
             # print('County distribution:')
             # dist = {county.unique_id: 0 for county in self.counties}
@@ -217,15 +217,14 @@ class GerrySort(mesa.Model):
         '''
         Self-sorting process for agents in the model.
         '''
-        self.n_moves = 0
+        self.total_moves = 0
         if self.debug: print('Sorting...')
         # Update moving cooldown
         for agent in self.population:
             # Check if utility is below threshold and cooldown has passed
             if agent.is_unhappy and self.moving_cooldown <= agent.last_moved:
                 agent.sort()
-                # self.n_moves += 1
-        if self.debug: print(f'\t{self.n_moves} agents moved.')
+        if self.debug: print(f'\t{self.total_moves} agents moved.')
 
     def gerrymander(self):
         '''
@@ -322,7 +321,7 @@ class GerrySort(mesa.Model):
             print(f'\tControl: {self.control}')
             print(f'\tProjected Winner: {self.projected_winner}')
             print(f'\tProjected Margin: {self.projected_margin}')
-            print(f'\tNumber of Moves: {self.n_moves}')
+            print(f'\tNumber of Moves: {self.total_moves}')
             print(f'\tChange in Map: {self.change_map}')
             # print('Capacity counties:')
             # [print(f'\t{county.unique_id}: {county.num_people}/{county.capacity}') for county in self.counties]
@@ -334,7 +333,7 @@ class GerrySort(mesa.Model):
             # print(dist)
 
         # If energy (total moves and change in map) is zero, then the model has converged
-        # if self.n_moves == 0 and self.change_map == 0 or self.iter >= self.max_iters:
+        # if self.total_moves == 0 and self.change_map == 0 or self.iter >= self.max_iters:
         if self.iter >= self.max_iters:
             if self.debug: print('Model converged! (t={})'.format(self.iter))
             self.running = False

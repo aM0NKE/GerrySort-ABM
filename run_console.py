@@ -9,7 +9,7 @@ debug = True
 trials = 1
 
 # Set the parameters for the model
-state = 'MN'
+state = 'MI'
 max_iters = 5
 npop=500               # 5,800,000 people in MN
 gerrymandering=True

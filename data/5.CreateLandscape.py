@@ -5,7 +5,7 @@ import os
 
 def process_ruca(state):
     # Open RUCA file and rename columns
-    ruca = pd.read_excel('ruca2010/ruca2010revised.xlsx', header=1)
+    ruca = pd.read_excel('other/ruca2010revised.xlsx', header=1)
     ruca = ruca.rename(columns={'State-County FIPS Code': 'SC_FIPS', 
                             'Select State': 'STATE',
                             'Select County': 'COUNTY',
@@ -111,21 +111,30 @@ def add_household_income_data(counties, household_income_data):
     county_housing_income = gpd.GeoDataFrame(county_housing_income, geometry='geometry')
     return county_housing_income
 
-state = 'LA' # Set state
+state = 'OR' # Set state
 
 # Process RUCA data
 state_ruca = process_ruca(state)
+print(state_ruca)
 
 # Add RUCA data to the processed county data
-counties = gpd.read_file(os.path.join(state, state + '_COUNTY_initial.geojson'))
+counties = gpd.read_file(os.path.join('processed_states', state, state + '_COUNTY.geojson'))
 counties_ruca = add_ruca(state_ruca, counties)
+print(counties)
+# Decapitalize COUNTY column (Except first letter)
+# counties_ruca['COUNTY'] = counties_ruca['COUNTY'].str.capitalize()
+print(counties_ruca)
 
 # Add voting shares to the counties_ruca
-voting_data = pd.read_csv('countypres_2000-2020.csv')
+voting_data = pd.read_csv('other/countypres_2000-2020.csv')
 counties_ruca_votes = add_voting_data(state, counties_ruca, voting_data)
+print(voting_data)
+print(counties_ruca_votes)
 
 # Add household and income data to the counties_ruca_votes
-household_data = pd.read_excel(os.path.join(state, state + '_HOUSING_INCOME.xlsx'))
+household_data = pd.read_csv(os.path.join('processed_states', state, state + '_demographics.csv'))
 final_landscape = add_household_income_data(counties_ruca_votes, household_data)
-final_landscape.to_file(os.path.join(state, state + '_FitnessLandscape.geojson'), driver='GeoJSON')
+print(household_data)
+print(final_landscape)
+final_landscape.to_file(os.path.join('processed_states', state, state + '_FitnessLandscape.geojson'), driver='GeoJSON')
 print(final_landscape.columns)
