@@ -56,13 +56,13 @@ def process_ruca(state):
 
     return state_ruca
 
-state = 'TX' # Set state
+state = 'LA' # Set state
 
 # Open the file
 gdf = gpd.read_file(os.path.join('processed_states', state, state + '_PRECINCTS.geojson'))
 
 # Create intial plans for each district unit
-district_units = ['COUNTY']
+district_units = ['CONGDIST', 'SENDIST', 'LEGDIST', 'COUNTY']
 # district_units = ['COUNTY']
 for district_unit in district_units:
     # Set output file path

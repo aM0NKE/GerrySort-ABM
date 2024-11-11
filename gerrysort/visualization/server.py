@@ -2,8 +2,7 @@ import mesa
 import mesa_geo as mg
 
 from ..agents.person import PersonAgent
-from ..agents.district import DistrictAgent
-from ..agents.county import CountyAgent
+from ..agents.geo_unit import GeoAgent
 from ..model import GerrySort
 
 class ModelParamsElement(mesa.visualization.TextElement):
@@ -39,15 +38,15 @@ class MetricsElement(mesa.visualization.TextElement):
         return f"EG: {model.efficiency_gap:.2f} | M-M: {model.mean_median:.2f} | Dec: {model.declination:.2f}"
     
 model_params = {
-    "state": mesa.visualization.Choice("State", value="PA", choices=["MN", "WI", "MI", "PA", "GA", "LA", "TX"]),
+    "state": mesa.visualization.Choice("State", value="MN", choices=["MN", "WI", "MI", "PA", "GA", "LA", "TX"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
-    "max_iters": mesa.visualization.Slider("Max Iterations", 15, 5, 100, 5),
-    "npop": mesa.visualization.Slider("Number of Agents", 2500, 500, 10000, 250),
+    "max_iters": mesa.visualization.Slider("Max Iterations", 10, 2, 100, 1),
+    "npop": mesa.visualization.Slider("Number of Agents", 5800, 100, 10000, 100),
     "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.50, 0.00, 1.00, 0.05),
     "beta": mesa.visualization.Slider("Beta (Temperature)", 100.0, 0.0, 100.0, 10),
-    "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 5, 5, 25, 5),
-    "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 10, 5, 35, 5),
+    "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 5, 5, 20, 1),
+    "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 5, 5, 20, 1),
     "distance_decay": mesa.visualization.Slider("Distance Decay", 0.0, 0.0, 1.0, 0.1),
     "moving_cooldown": mesa.visualization.Slider("Moving Cooldown", 0, 0, 10, 1),
     "capacity_mul": mesa.visualization.Slider("Capacity Multiplier", 1.0, 0.0, 5.0, 0.1),
@@ -55,10 +54,10 @@ model_params = {
 
 def schelling_draw(agent):
     portrayal = {}
-    if isinstance(agent, DistrictAgent):
+    if isinstance(agent, GeoAgent):
         portrayal["color"] = agent.color
-    elif isinstance(agent, CountyAgent):
-        portrayal["color"] = agent.color
+    # elif isinstance(agent, CountyAgent):
+    #     portrayal["color"] = agent.color
     elif isinstance(agent, PersonAgent):
         portrayal["radius"] = 1
         portrayal["shape"] = "circle"

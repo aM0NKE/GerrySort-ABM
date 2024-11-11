@@ -3,33 +3,36 @@ import os
 
 from gerrysort.model import GerrySort
 
-debug = True
+debug = False
 
 # Set number of experiment trials
-trials = 1
+trials = 5
 
 # Set the parameters for the model
-state = 'MI'
+state = 'MN'
 max_iters = 5
-npop=500               # 5,800,000 people in MN
+npop=5800               # 5,800,000 people in MN
 gerrymandering=True
 sorting=True
 tolarence=0.5
-beta=100.0                # O means that moving decision is totally random
+beta=100.0              # 0 means that moving decision is totally random
 n_proposed_maps=5
 n_moving_options=5
 moving_cooldown=0
-distance_decay=1.0
+distance_decay=0.0      # 0.0 means that distance will not affect utility of moving options
 capacity_mul=1.0
 
 # Open the data
+print(f'Loading {state} data...')
 ensemble = gpd.read_file(os.path.join('data/processed_states', state, state + '_CONGDIST_ensemble.geojson'))
 initial_plan = gpd.read_file(os.path.join('data/processed_states', state, state + '_CONGDIST_initial.geojson'))
 state_leg_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_LEGDIST.geojson'))
 state_sen_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_SENDIST.geojson'))
 fitness_landscape = gpd.read_file(os.path.join('data/processed_states', state, state + '_FitnessLandscape.geojson'))
 
+print(f'Conducting {trials} experiments...\n')
 for i in range(trials):
+    print(f'Experiment {i + 1} started...')
     # Create the model
     model = GerrySort(
         debug=debug,
@@ -66,6 +69,29 @@ for i in range(trials):
     print(f'\t\tMean Median: {model.mean_median}')
     print(f'\t\tDeclination: {model.declination}')
     print(f'\tControl: {model.control} | Projected Margin: {model.projected_margin}')
-    print(f'\t\tState House Seats | Red: {model.red_state_house_seats} | Blue: {model.blue_state_house_seats} | Tied: {model.tied_state_house_seats}')
-    print(f'\t\tState Senate Seats | Red: {model.red_state_senate_seats} | Blue: {model.blue_state_senate_seats} | Tied: {model.tied_state_senate_seats}')
+    # print(f'\t\tState House Seats | Red: {model.red_state_house_seats} | Blue: {model.blue_state_house_seats} | Tied: {model.tied_state_house_seats}')
+    # print(f'\t\tState Senate Seats | Red: {model.red_state_senate_seats} | Blue: {model.blue_state_senate_seats} | Tied: {model.tied_state_senate_seats}')
     print('-----------------------------------\n')
+
+    # # Prepare a list to store county data
+    # county_data = []
+
+    # # Loop through each county and collect the relevant attributes
+    # for county in model.counties:
+    #     county_data.append({
+    #         'CONGDIST': county.district_id,
+    #         'TOTPOP': county.num_people,
+    #         'geometry': county.geometry,
+
+    #     })
+
+    # # Convert the list of dictionaries to a GeoDataFrame
+    # counties_gdf = gpd.GeoDataFrame(county_data, crs="EPSG:4326")  # Ensure CRS is set appropriately
+
+    # # Display the first few rows
+    # print(counties_gdf.head())
+    # # Print unique vals for CONGDIST
+    # print(counties_gdf['CONGDIST'].unique(), len(counties_gdf['CONGDIST'].unique()))
+
+    # # Save to geojson file
+    # counties_gdf.to_file(os.path.join('data', 'processed_states', f'{state}_counties_MODEL_TEST.geojson'), driver='GeoJSON')zx

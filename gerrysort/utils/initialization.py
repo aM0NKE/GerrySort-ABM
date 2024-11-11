@@ -1,8 +1,7 @@
 import mesa_geo as mg
 
 from ..agents.person import PersonAgent
-from ..agents.district import DistrictAgent
-from ..agents.county import CountyAgent
+from ..agents.geo_unit import GeoAgent
 
 from math import ceil
 import random
@@ -75,44 +74,46 @@ def create_counties_districts(model):
     district_id: column name for electoral district names of dataframe consisting initial plan data
     '''
     # Set up congressional electoral districts for simulating gerrymandering/electoral processes
-    ac_cong = mg.AgentCreator(DistrictAgent, model=model, agent_kwargs={'type': 'congressional'})
+    ac_cong = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'congressional'})
     model.USHouseDistricts = ac_cong.from_GeoDataFrame(model.initial_plan, unique_id='CONGDIST')
     model.num_USHouseDistricts = len(model.USHouseDistricts)
+    model.space.add_districts(model.USHouseDistricts)
 
-    # Set up state house electoral districts for simulating state house elections
-    ac_leg = mg.AgentCreator(DistrictAgent, model=model, agent_kwargs={'type': 'state-house'})
-    model.StateHouseDistricts = ac_leg.from_GeoDataFrame(model.state_leg_map, unique_id='LEGDIST')
-    model.num_StateHouseDistricts = len(model.StateHouseDistricts)
-    # model.space.add_districts(model.StateHouseDistricts)
+    # # Set up state house electoral districts for simulating state house elections
+    # ac_leg = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'state-house'})
+    # model.StateHouseDistricts = ac_leg.from_GeoDataFrame(model.state_leg_map, unique_id='LEGDIST')
+    # model.num_StateHouseDistricts = len(model.StateHouseDistricts)
+    # # model.space.add_districts(model.StateHouseDistricts)
 
-    # Set up state senate electoral districts for simulating state senate elections
-    ac_sen = mg.AgentCreator(DistrictAgent, model=model, agent_kwargs={'type': 'state-senate'})
-    model.StateSenateDistricts = ac_sen.from_GeoDataFrame(model.state_sen_map, unique_id='SENDIST')
-    model.num_StateSenateDistricts = len(model.StateSenateDistricts)
-    # model.space.add_districts(model.StateSenateDistricts)
+    # # Set up state senate electoral districts for simulating state senate elections
+    # ac_sen = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'state-senate'})
+    # model.StateSenateDistricts = ac_sen.from_GeoDataFrame(model.state_sen_map, unique_id='SENDIST')
+    # model.num_StateSenateDistricts = len(model.StateSenateDistricts)
+    # # model.space.add_districts(model.StateSenateDistricts)
 
     # Set up counties for simulating population shifts
-    ac_c = mg.AgentCreator(CountyAgent, model=model)
+    ac_c = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'county'})
     model.counties = ac_c.from_GeoDataFrame(model.fitness_landscape, unique_id='COUNTY')
     model.n_counties = len(model.counties)
     model.space.add_counties(model.counties)
 
-    for district in model.USHouseDistricts:
+    # for district in model.USHouseDistricts:
         # Rename unique_id
-        setattr(district, 'unique_id', f'{district.type}-{district.unique_id}')
+        # setattr(district, 'unique_id', f'{district.type}-{district.unique_id}')
         # Add districts to the scheduler
-        model.schedule.add(district)
+        # model.schedule.add(district)
 
-    for district in model.StateHouseDistricts:
-        setattr(district, 'unique_id', f'{district.type}-{district.unique_id}')
-        model.schedule.add(district)
+    # for district in model.StateHouseDistricts:
+        # setattr(district, 'unique_id', f'{district.type}-{district.unique_id}')
+        # model.schedule.add(district)
 
-    for district in model.StateSenateDistricts:
-        setattr(district, 'unique_id', f'{district.type}-{district.unique_id}')
-        model.schedule.add(district)
+    # for district in model.StateSenateDistricts:
+        # setattr(district, 'unique_id', f'{district.type}-{district.unique_id}')
+        # model.schedule.add(district)
 
-    # Add districts to visualization map
-    model.space.add_districts(model.USHouseDistricts)
+    # for county in model.counties:
+        # setattr(county, 'unique_id', f'{county.type}-{county.unique_id}')
+        # model.schedule.add(county)
 
     # Update the county to congressional district map
     model.space.update_county_to_district_map(model.counties, model.USHouseDistricts)
@@ -120,7 +121,7 @@ def create_counties_districts(model):
     if model.debug:
         print('# of electoral districts/counties:')
         print('\tCongressional: ', model.num_USHouseDistricts)
-        print('\tState House: ', model.num_StateHouseDistricts)
-        print('\tState Senate: ', model.num_StateSenateDistricts)
+        # print('\tState House: ', model.num_StateHouseDistricts)
+        # print('\tState Senate: ', model.num_StateSenateDistricts)
         print('\tCounties: ', model.n_counties)
         print('Counties and districts created!')

@@ -14,17 +14,17 @@ from tqdm import tqdm
 
 # Set the random seed so that the results are reproducible!
 import random
-random.seed(42)
+random.seed(69)
 
-state = 'NC'
+state = 'WI'
 
 # Select MGGG States file
-input_file = os.path.join('processed_states', state, f'{state}_PRECINCTS.geojson')
+input_file = os.path.join('processed_states', f'{state}_counties_MODEL_TEST.geojson')
 # Set population and district columns
 pop_col = 'TOTPOP'; dist_col = 'CONGDIST'
 
 # Set output file
-output_file = os.path.join('processed_states', state, f'{state}_CONGDIST_ensemble.geojson')
+output_file = os.path.join('processed_states', f'{state}_CONGDIST_ensemble_MODEL_TEST.geojson')
 
 # Set ensemble and batch size 
 n = 50
@@ -76,15 +76,20 @@ proposal = partial(
     recom,
     pop_col=pop_col,
     pop_target=ideal_population,
-    epsilon=0.01,
-    node_repeats=2,
+    epsilon=0.25,
+    node_repeats=100,
+    method = partial(
+        bipartition_tree,
+        max_attempts=100,
+        allow_pair_reselection=True  # <-- This is the only change
+    )
 )
 
 # Set up Markov chain
 recom_chain = MarkovChain(
     proposal=proposal,
-    constraints=[],
-    # constraints=[contiguous],
+    # constraints=[],
+    constraints=[contiguous],
     accept=accept.always_accept,
     initial_state=initial_partition,
     total_steps=n,

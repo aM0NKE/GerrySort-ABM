@@ -1,8 +1,9 @@
 import mesa_geo as mg
+import random
 from math import ceil
-from shapely.geometry import Polygon, MultiPolygon
+from shapely.geometry import Point, Polygon, MultiPolygon
 
-class DistrictAgent(mg.GeoAgent):
+class GeoAgent(mg.GeoAgent):
     type: str
     num_people: int
     red_cnt: int
@@ -35,10 +36,27 @@ class DistrictAgent(mg.GeoAgent):
         self.red_pct = 0
         self.blue_pct = 0
         self.color = 'Grey'
+        if self.type == 'county':
+            self.district_id = None
+            self.capacity = 0
+
+    def random_point(self):
+        '''
+        Returns a random point within a geographical unit, used to place agents in county.
+        '''
+        # Extract bounds of county
+        min_x, min_y, max_x, max_y = self.geometry.bounds
+        # Draw random point within bounds
+        while not self.geometry.contains(
+            random_point := Point(
+                random.uniform(min_x, max_x), random.uniform(min_y, max_y)
+            )):
+            continue
+        return random_point
 
     def calculate_wasted_votes(self):
         '''
-        Calculates the wasted votes for the Dem and Rep party.
+        Returns the wasted votes in a geographical unit for the Dem and Rep party.
         '''
         red_wasted_votes = 0
         blue_wasted_votes = 0
@@ -58,33 +76,29 @@ class DistrictAgent(mg.GeoAgent):
         
         return red_wasted_votes, blue_wasted_votes
     
-    def update_district_geometry(self, new_geometry):
+    def update_geometry(self, new_geometry):
         '''
-        Updates the geometry of the electoral district.
+        Updates the geometry of a geographical unit.
         '''
         if isinstance(new_geometry, Polygon):
             new_geometry = MultiPolygon([new_geometry])
         self.geometry = new_geometry
 
-    def update_district_data(self):
+    def reset_data(self):
         '''
-        Updates the data of the electoral district.
+        Resets the data of the electoral district.
         '''
-        # Reset counters
         self.num_people = 0
         self.red_cnt = 0
         self.blue_cnt = 0
-        # Update district counts
-        for person in self.model.population:
-            if self.geometry.contains(person.geometry):
-                self.num_people += 1
-                if person.is_red:
-                    self.red_cnt += 1
-                else:
-                    self.blue_cnt += 1
-                # Update the district_id of the person (only if district is congressional)
-                if self.type == 'congressional': # TODO: Check if this can be someone else
-                    person.district_id = self.unique_id
+        self.red_pct = 0
+        self.blue_pct = 0
+        self.color = 'Grey'
+
+    def update_majority(self):
+        '''
+        Updates the color of the electoral district, used for the visualization.
+        '''
         # Update district percentages
         if self.num_people != 0:
             self.red_pct = self.red_cnt / self.num_people
@@ -93,10 +107,7 @@ class DistrictAgent(mg.GeoAgent):
             self.red_pct = 0
             self.blue_pct = 0
 
-    def update_district_color(self):
-        '''
-        Updates the color of the electoral district, used for the visualization.
-        '''
+        # Determine majority party
         if self.red_cnt > self.blue_cnt:
             self.color = 'Red'
         elif self.red_cnt < self.blue_cnt:

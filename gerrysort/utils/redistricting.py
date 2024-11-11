@@ -1,4 +1,3 @@
-from ..agents.district import DistrictAgent
 from .statistics import *
 
 import random
@@ -10,9 +9,18 @@ def redistrict(model, new_geometry):
     new_geometry: list of new geometries for each district (in the same order as the districts)
     '''
     for i, district in enumerate(model.USHouseDistricts):
-        district.update_district_geometry(new_geometry[i])
-        district.update_district_data()
-        district.update_district_color()
+        district.update_geometry(new_geometry[i])
+
+def evaluate_plan(model, new_geometry):
+    # Update boundaries
+    redistrict(model, new_geometry)
+    # Update census data
+    model.update_census_data(model.USHouseDistricts)
+    # Update majority party
+    [district.update_majority() for district in model.USHouseDistricts]
+    # Update statistics
+    model.update_statistics(statistics=[red_congressional_seats, blue_congressional_seats, tied_congressional_seats, 
+                                        efficiency_gap, mean_median, declination, variance])
 
 def evaluate_plans(model):
     '''
@@ -32,7 +40,8 @@ def evaluate_plans(model):
             'tied_congressional_seats': model.tied_congressional_seats,
             'efficiency_gap': model.efficiency_gap,
             'mean_median': model.mean_median,
-            'declination': model.declination
+            'declination': model.declination,
+            'variance': model.variance
         }
     
     plans = []
@@ -43,11 +52,10 @@ def evaluate_plans(model):
             plan_n = random.choice(model.ensemble['plan'].unique())
         plans.append(plan_n)
 
-        # Evaluate the plan
+        # Select and evaluate the plan
         new_geometry = model.ensemble[model.ensemble['plan'] == plan_n]['geometry'].values
-        redistrict(model, new_geometry)
-        model.update_statistics(statistics=[red_congressional_seats, blue_congressional_seats, tied_congressional_seats, 
-                                            efficiency_gap, mean_median, declination])
+        evaluate_plan(model, new_geometry)
+
         # Save the results
         results[f'{plan_n}'] = {
             'district': [district.unique_id for district in model.USHouseDistricts],
@@ -57,7 +65,8 @@ def evaluate_plans(model):
             'tied_congressional_seats': model.tied_congressional_seats,
             'efficiency_gap': model.efficiency_gap,
             'mean_median': model.mean_median,
-            'declination': model.declination
+            'declination': model.declination,
+            'variance': model.variance
         }
     return results
 

@@ -111,28 +111,39 @@ def add_household_income_data(counties, household_income_data):
     county_housing_income = gpd.GeoDataFrame(county_housing_income, geometry='geometry')
     return county_housing_income
 
-state = 'OR' # Set state
+state = 'LA' # Set state
 
 # Process RUCA data
 state_ruca = process_ruca(state)
-print(state_ruca)
+# print(state_ruca)
 
 # Add RUCA data to the processed county data
 counties = gpd.read_file(os.path.join('processed_states', state, state + '_COUNTY.geojson'))
+# Remove 'Parish' from COUNTY names
+counties['COUNTY'] = counties['COUNTY'].str.replace(' Parish', '')
 counties_ruca = add_ruca(state_ruca, counties)
 print(counties)
 # Decapitalize COUNTY column (Except first letter)
-# counties_ruca['COUNTY'] = counties_ruca['COUNTY'].str.capitalize()
+counties_ruca['COUNTY'] = counties_ruca['COUNTY'].str.upper()
 print(counties_ruca)
 
 # Add voting shares to the counties_ruca
 voting_data = pd.read_csv('other/countypres_2000-2020.csv')
 counties_ruca_votes = add_voting_data(state, counties_ruca, voting_data)
-print(voting_data)
 print(counties_ruca_votes)
+
+# print mckean county
+print(counties_ruca_votes[counties_ruca_votes['COUNTY'] == 'MCKEAN'])
 
 # Add household and income data to the counties_ruca_votes
 household_data = pd.read_csv(os.path.join('processed_states', state, state + '_demographics.csv'))
+household_data['COUNTY'] = household_data['COUNTY'].str.replace(' Parish', '')
+# capitalize County names to COUNTY
+household_data['COUNTY'] = household_data['COUNTY'].str.upper()
+print(household_data)
+print(household_data[household_data['COUNTY'] == 'MCKEAN'])
+
+
 final_landscape = add_household_income_data(counties_ruca_votes, household_data)
 print(household_data)
 print(final_landscape)

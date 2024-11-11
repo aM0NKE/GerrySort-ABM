@@ -82,12 +82,12 @@ class GerrySort(mesa.Model):
         self.red_congressional_seats = 0
         self.blue_congressional_seats = 0
         self.tied_congressional_seats = 0
-        self.red_state_house_seats = 0
-        self.blue_state_house_seats = 0
-        self.tied_state_house_seats = 0
-        self.red_state_senate_seats = 0
-        self.blue_state_senate_seats = 0
-        self.tied_state_senate_seats = 0
+        # self.red_state_house_seats = 0
+        # self.blue_state_house_seats = 0
+        # self.tied_state_house_seats = 0
+        # self.red_state_senate_seats = 0
+        # self.blue_state_senate_seats = 0
+        # self.tied_state_senate_seats = 0
         self.efficiency_gap = 0
         self.mean_median = 0
         self.declination = 0
@@ -128,12 +128,13 @@ class GerrySort(mesa.Model):
         create_population(self)
 
         # Update census data
-        self.update_census_data()
+        self.update_census_data(self.USHouseDistricts)
+        self.update_census_data(self.counties)
 
         # Update statistics
         self.update_statistics(statistics=[red_congressional_seats, blue_congressional_seats, tied_congressional_seats, 
-                                    red_state_house_seats, blue_state_house_seats, tied_state_house_seats, 
-                                    red_state_senate_seats, blue_state_senate_seats, tied_state_senate_seats,  
+                                    # red_state_house_seats, blue_state_house_seats, tied_state_house_seats, 
+                                    # red_state_senate_seats, blue_state_senate_seats, tied_state_senate_seats,  
                                     efficiency_gap, mean_median, declination,
                                     projected_winner, projected_margin, 
                                     variance])
@@ -154,8 +155,8 @@ class GerrySort(mesa.Model):
             print(f'\tRed Congressional Seats: {self.red_congressional_seats} | Blue Congressional Seats: {self.blue_congressional_seats} | Tied Congressional Seats: {self.tied_congressional_seats}')
             print(f'\tPopulation counts: {[district.num_people for district in self.USHouseDistricts]}')
             print(f'\tVariance: {self.variance}')
-            print(f'\tRed State House Seats: {self.red_state_house_seats} | Blue State House Seats: {self.blue_state_house_seats} | Tied State House Seats: {self.tied_state_house_seats}')
-            print(f'\tRed State Senate Seats: {self.red_state_senate_seats} | Blue State Senate Seats: {self.blue_state_senate_seats} | Tied State Senate Seats: {self.tied_state_senate_seats}')
+            # print(f'\tRed State House Seats: {self.red_state_house_seats} | Blue State House Seats: {self.blue_state_house_seats} | Tied State House Seats: {self.tied_state_house_seats}')
+            # print(f'\tRed State Senate Seats: {self.red_state_senate_seats} | Blue State Senate Seats: {self.blue_state_senate_seats} | Tied State Senate Seats: {self.tied_state_senate_seats}')
             print(f'\tEfficiency Gap: {self.efficiency_gap}')
             print(f'\tMean Median: {self.mean_median}')
             print(f'\tDeclination: {self.declination}')
@@ -185,27 +186,33 @@ class GerrySort(mesa.Model):
         for stat in statistics:
             stat(model)
 
-    def update_census_data(self):
+    def update_census_data(self, geo_units):
         '''
         Updates the data of all electoral district agents in the model.
         '''
-        # Color districts based on initial plan
-        for district in self.USHouseDistricts:
-            district.update_district_data()
-            district.update_district_color()
+        # Reset data
+        [unit.reset_data() for unit in geo_units]
         
-        # NOTE: can be turned off if we only use the USHouseDistricts
-        # Update data of state house and senate districts
-        # for district in self.StateHouseDistricts:
-        #     district.update_district_data()
-        #     district.update_district_color()
-            
-        # for district in self.StateSenateDistricts:
-        #     district.update_district_data()
-        #     district.update_district_color()
+        # Conduct census
+        for person in self.population:
+            for unit in geo_units:
+                if person.geometry.within(unit.geometry):
+                    unit.num_people += 1
+                    if person.is_red:
+                        unit.red_cnt += 1
+                    else:
+                        unit.blue_cnt += 1
+                    if unit.type == 'congressional':
+                        person.district_id = unit.unique_id
+                    if unit.type == 'county':
+                        person.county_id = unit.unique_id
+                    break    
 
-        for county in self.counties:
-            county.update_district_data()
+        # Update majority party
+        [unit.update_majority() for unit in geo_units]
+
+        # Update county to district map
+        self.space.update_county_to_district_map(self.counties, self.USHouseDistricts)
 
     def update_utilities(self):
         '''
@@ -265,15 +272,6 @@ class GerrySort(mesa.Model):
             # print('\nBest plan:', best_plan)
             # print('Tied state, minimizing efficiency gap')
 
-        if self.debug:
-            print(f'\tFrom plan -1 to plan {best_plan}')
-            print(f'\t\tFrom {eval_results["-1"]["red_congressional_seats"]} to {eval_results[best_plan]["red_congressional_seats"]} red districts')
-            print(f'\t\tFrom {eval_results["-1"]["blue_congressional_seats"]} to {eval_results[best_plan]["blue_congressional_seats"]} blue districts')
-            print(f'\t\tFrom {eval_results["-1"]["tied_congressional_seats"]} to {eval_results[best_plan]["tied_congressional_seats"]} tied districts')
-            print(f'\t\tFrom {eval_results["-1"]["efficiency_gap"]} to {eval_results[best_plan]["efficiency_gap"]} efficiency gap')
-            print(f'\t\tFrom {eval_results["-1"]["mean_median"]} to {eval_results[best_plan]["mean_median"]} mean median')
-            print(f'\t\tFrom {eval_results["-1"]["declination"]} to {eval_results[best_plan]["declination"]} declination')
-
         # Update the model with the best plan
         redistrict(self, eval_results[best_plan]['geometry'])
 
@@ -294,13 +292,22 @@ class GerrySort(mesa.Model):
             if self.debug: print('Gerrymandering complete!')
 
         # Update census data
-        self.update_census_data()
+        self.update_census_data(self.USHouseDistricts)
+        self.update_census_data(self.counties)
 
-        # Update agents' utilities
+        # Update statistics
+        self.update_statistics(statistics=[red_congressional_seats, blue_congressional_seats, tied_congressional_seats, 
+                                    # red_state_house_seats, blue_state_house_seats, tied_state_house_seats, 
+                                    # red_state_senate_seats, blue_state_senate_seats, tied_state_senate_seats,  
+                                    efficiency_gap, mean_median, declination,
+                                    projected_winner, projected_margin, 
+                                    variance])
+        
+        # Update utility of all agents
         self.update_utilities()
+        self.update_statistics(statistics=[unhappy_happy])
 
-        # Update and collect data
-        self.update_statistics()
+        # Collect data
         self.datacollector.collect(self)
 
         self.iter += 1
@@ -313,8 +320,8 @@ class GerrySort(mesa.Model):
             print(f'\tRed Congressional Seats: {self.red_congressional_seats} | Blue Congressional Seats: {self.blue_congressional_seats} | Tied Congressional Seats: {self.tied_congressional_seats}')
             print(f'\tPopulation counts: {[district.num_people for district in self.USHouseDistricts]}')
             print(f'\tVariance: {self.variance}')
-            print(f'\tRed State House Seats: {self.red_state_house_seats} | Blue State House Seats: {self.blue_state_house_seats} | Tied State House Seats: {self.tied_state_house_seats}')
-            print(f'\tRed State Senate Seats: {self.red_state_senate_seats} | Blue State Senate Seats: {self.blue_state_senate_seats} | Tied State Senate Seats: {self.tied_state_senate_seats}')
+            # print(f'\tRed State House Seats: {self.red_state_house_seats} | Blue State House Seats: {self.blue_state_house_seats} | Tied State House Seats: {self.tied_state_house_seats}')
+            # print(f'\tRed State Senate Seats: {self.red_state_senate_seats} | Blue State Senate Seats: {self.blue_state_senate_seats} | Tied State Senate Seats: {self.tied_state_senate_seats}')
             print(f'\tEfficiency Gap: {self.efficiency_gap}')
             print(f'\tMean Median: {self.mean_median}')
             print(f'\tDeclination: {self.declination}')

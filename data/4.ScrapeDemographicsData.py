@@ -2,8 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
-state = 'oregon'
-output_file = 'processed_states/OR/OR_demographics.csv'
+state = 'louisiana'
+output_file = 'processed_states/LA/LA_demographics.csv'
 
 # URLs to scrape
 households_url = f'https://www.indexmundi.com/facts/united-states/quick-facts/{state}/households#table'
