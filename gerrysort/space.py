@@ -6,142 +6,163 @@ import random
 from typing import Dict
 
 class ElectoralDistricts(mg.GeoSpace):
-    _id_district_map: Dict[str, GeoAgent]
-    _id_county_map: Dict[str, GeoAgent]
-    county_district_map: Dict[str, str]
+    id_precinct_map: Dict[str, GeoAgent]
+    id_county_map: Dict[str, GeoAgent]
+    id_congdist_map: Dict[str, GeoAgent]
+    precinct_county_map: Dict[str, str]
+    precinct_congdist_map: Dict[str, str]
 
     def __init__(self):
         super().__init__(crs=4326, warn_crs_conversion=True)
-        self._id_district_map = {}
-        self._id_county_map = {}
+        self.id_congdist_map = {}
+        self.id_county_map = {}
+        self.id_precinct_map = {}
+        self.precinct_county_map = {}
+        self.precinct_congdist_map = {}
+
+    def add_precincts(self, precincts):
+        for precinct in precincts:
+            if isinstance(precinct, GeoAgent):
+                self.id_precinct_map[precinct.unique_id] = precinct
+
+    def add_counties(self, counties):
+        for county in counties:
+            if isinstance(county, GeoAgent):
+                self.id_county_map[county.unique_id] = county
 
     def add_districts(self, districts):
-        '''
-        Adds and saves electoral districts to visualization map.
-
-        districts: list of electoral district instances to redistrict
-        '''
         # Add districts to the space
         super().add_agents(districts)
-
         # Add districts to the id map
         for district in districts:
             if isinstance(district, GeoAgent):
-                self._id_district_map[district.unique_id] = district
-        # print(f"Added {len(districts)} districts to the space.")
+                self.id_congdist_map[district.unique_id] = district
 
-    def add_counties(self, counties):
-        '''
-        Saves counties to county-id map.
+    def create_precinct_to_county_map(self, precincts):
+        for precinct in precincts:
+            # Get county
+            county = self.get_county_by_id(precinct.COUNTYFIPS)
+            # Add precinct to county agent
+            county.precincts.append(precinct.unique_id)
+            # Add county to precinct-county map
+            self.precinct_county_map[precinct.unique_id] = precinct.COUNTYFIPS
 
-        counties: list of county instances used to relocate
-        '''
-        # super().add_agents(counties)
+    def create_precinct_to_congdist_map(self, precincts):
+        for precinct in precincts:
+            # Get district
+            district = self.get_district_by_id(precinct.CONGDIST)
+            # Add precinct to district agent
+            district.precincts.append(precinct.unique_id)
+            # Add district to precinct-district map
+            self.precinct_congdist_map[precinct.unique_id] = precinct.CONGDIST
 
-        # Add counties to the id map
-        for county in counties:
-            if isinstance(county, GeoAgent):
-                self._id_county_map[county.unique_id] = county
+    def add_person_to_precinct(self, person, new_precinct_id, new_position=None):
+        # Update precinct attributes
+        precinct = self.get_precinct_by_id(new_precinct_id)
+        precinct.num_people += 1
+        if person.color == 'Red':
+            precinct.reps.append(person.unique_id)
+        elif person.color == 'Blue':
+            precinct.dems.append(person.unique_id)
 
-    def update_county_to_district_map(self, counties, districts):
-        '''
-        Clears the county-district map and rebuilds it after the redistricting process.
-
-        counties: list of county instances used to relocate
-        districts: list of electoral district instances to redistrict
-        '''
-        # Convert county and district lists to GeoDataFrames
-        counties_gdf = gpd.GeoDataFrame([
-            {'unique_id': county.unique_id, 'geometry': county.geometry} 
-            for county in counties if county.geometry is not None
-        ], crs=districts[0].crs)
-
-
-        districts_gdf = gpd.GeoDataFrame([
-            {'unique_id': district.unique_id, 'geometry': district.geometry} 
-            for district in districts if district.geometry is not None
-        ], crs=districts[0].crs)
-
-        # Choose a projected CRS suitable for area calculations (e.g., EPSG:5070 for the U.S.)
-        projected_crs = "EPSG:5070"
-        counties_gdf = counties_gdf.to_crs(projected_crs)
-        districts_gdf = districts_gdf.to_crs(projected_crs)
-            
-        # Perform spatial join with 'intersection' to capture overlap areas
-        overlay = gpd.overlay(counties_gdf, districts_gdf, how='intersection', keep_geom_type=False)
-
-        # print('overlay: ', overlay)
-        # Add area column to determine largest overlap
-        overlay['area'] = overlay.geometry.area
-        # print('overlay (area): ', overlay['area'])
-        # Find the district with maximum overlap for each county
-        max_overlap = overlay.loc[overlay.groupby('unique_id_1')['area'].idxmax()]
-
-        # print('max_overlap: \n', max_overlap)
-        # Create the county-district map from the result
-        self.county_district_map = dict(zip(max_overlap['unique_id_1'], max_overlap['unique_id_2']))
-
-        # Update each county's district assignment based on the map
-        for county in counties:
-            if county.unique_id in self.county_district_map:
-                county.district_id = self.county_district_map[county.unique_id]
-
-    def remove_person_from_county(self, person):
-        '''
-        Removes person from county for visualization and clears it's attributes.
-
-        person: Person agent instance
-        '''
-        # Update num_pop counter
-        # print(f'Removing person {person.unique_id} from {person.county_id} ({self.county_district_map[person.county_id]}).')
-        county = self.get_county_by_id(person.county_id)
-        # print('REMOVING PERSON')
-        # print('[BEFORE]', county.num_people, '/' , county.capacity)
-        county.num_people -= 1
-        # print('[AFTER]', county.num_people, '/' , county.capacity, '\n')
-        # Clear attributes
-        # person.county_id = None
-        # person.district_id = None
-        # person.geometry = None
-        # Remove agent to map
-        super().remove_agent(person)
-    
-    def add_person_to_county(self, person, new_county_id, new_position=None):
-        '''
-        Adds person to county for visualization and updates attributes.
-
-        person: Person agent instance
-        new_county_id: new county id
-        new_position: new coordinates of relocation destination
-        '''
-        # print(f"Adding {person.unique_id} to {new_county_id} ({self.county_district_map[new_county_id]}).")
-        # Update num_pop counter
-        county = self._id_county_map[new_county_id]
-        # print('ADDING PERSON')
-        # print('[BEFORE]', county.num_people, '/' , county.capacity)
+        # Update county attributes
+        county = self.get_county_by_id(self.precinct_county_map[new_precinct_id])
         county.num_people += 1
-        # print('[AFTER]', county.num_people, '/' , county.capacity, '\n')
+        if person.color == 'Red':
+            county.rep_cnt += 1
+        elif person.color == 'Blue':
+            county.dem_cnt += 1
 
-        # Update attributes
-        # person.county_id = new_county_id
-        # person.district_id = self.county_district_map[new_county_id]
+        # Update congdist attributes
+        district = self.get_district_by_id(self.precinct_congdist_map[new_precinct_id])
+        district.num_people += 1
+        if person.color == 'Red':
+            district.rep_cnt += 1
+        elif person.color == 'Blue':
+            district.dem_cnt += 1
+
+        # Update person attributes
+        person.precinct_id = new_precinct_id
+        person.county_id = self.precinct_county_map[new_precinct_id]
+        person.district_id = self.precinct_congdist_map[new_precinct_id]
         if new_position is not None: 
             person.geometry = new_position
-        else: 
-            person.geometry = self._id_county_map[new_county_id].random_point()
+        else:
+            person.geometry = precinct.random_point()
 
         # Add agent to map
         super().add_agents(person)
 
-    def get_random_district_id(self) -> str:
-        return random.choice(list(self._id_district_map.keys()))
-    
-    def get_random_county_id(self) -> str:
-        return random.choice(list(self._id_county_map.keys()))
+    def remove_person_from_precinct(self, person):
+        # Update precinct attributes
+        precinct = self.get_precinct_by_id(person.precinct_id)
+        precinct.num_people -= 1
+        if person.color == 'Red':
+            precinct.reps.remove(person.unique_id)
+        elif person.color == 'Blue':
+            precinct.dems.remove(person.unique_id)
 
-    def get_district_by_id(self, district_id) -> GeoAgent:
-        return self._id_district_map.get(district_id)
+        # Update county attributes
+        county = self.get_county_by_id(person.county_id)
+        county.num_people -= 1
+        if person.color == 'Red':
+            county.rep_cnt -= 1
+        elif person.color == 'Blue':
+            county.dem_cnt -= 1
+
+        # Update congdist attributes
+        district = self.get_district_by_id(person.district_id)
+        district.num_people -= 1
+        if person.color == 'Red':
+            district.rep_cnt -= 1
+        elif person.color == 'Blue':
+            district.dem_cnt -= 1
+
+        # Clear attributes
+        person.precinct_id = None
+        person.county_id = None
+        person.district_id = None
+        person.geometry = None
+
+        # Remove agent to map
+        super().remove_agent(person)
+
+    # def remove_person_from_county(self, person):
+    #     '''
+    #     Removes person from county for visualization and clears it's attributes.
+
+    #     person: Person agent instance
+    #     '''
+    #     # Update num_pop counter
+    #     # print(f'Removing person {person.unique_id} from {person.county_id} ({self.county_district_map[person.county_id]}).')
+    #     county = self.get_county_by_id(person.county_id)
+    #     # print('REMOVING PERSON')
+    #     # print('[BEFORE]', county.num_people, '/' , county.capacity)
+    #     county.num_people -= 1
+    #     # print('[AFTER]', county.num_people, '/' , county.capacity, '\n')
+    #     # Clear attributes
+    #     # person.county_id = None
+    #     # person.district_id = None
+    #     # person.geometry = None
+    #     # Remove agent to map
+    #     super().remove_agent(person)
+
+
+    def get_random_precinct_id(self) -> str:
+        return random.choice(list(self.id_precinct_map.keys()))
+
+    def get_random_county_id(self) -> str:
+        return random.choice(list(self.id_county_map.keys()))
+
+    def get_random_district_id(self) -> str:
+        return random.choice(list(self.id_congdist_map.keys()))
+    
+
+    def get_precinct_by_id(self, precinct_id) -> GeoAgent:
+        return self.id_precinct_map.get(precinct_id)
     
     def get_county_by_id(self, county_id) -> GeoAgent:
-        return self._id_county_map.get(county_id)
+        return self.id_county_map.get(county_id)
     
+    def get_district_by_id(self, district_id) -> GeoAgent:
+        return self.id_congdist_map.get(district_id)

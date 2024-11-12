@@ -1,18 +1,156 @@
 import mesa_geo as mg
-
+import mesa
 from ..agents.person import PersonAgent
 from ..agents.geo_unit import GeoAgent
 
+import geopandas as gpd
+import os
 from math import ceil
 import random
 import uuid
+
+def load_data(model, state, data):
+    model.state = state
+    if data is None:
+        data = gpd.read_file(os.path.join('data/processed_states', state, state + '_precincts_election_results_2020.geojson'))
+    model.data = data.to_crs(model.space.crs)
+    check_crs_consistency(model)
 
 def check_crs_consistency(model):
     '''
     Checks if the CRS of all GeoDataFrames are consistent.
     '''
-    assert model.ensemble.crs == model.initial_plan.crs == model.state_leg_map.crs == model.state_sen_map.crs == model.fitness_landscape.crs, f'CRS mismatch: ensemble=({model.ensemble.crs}); initial_plan=({model.initial_plan.crs}); state_leg_map=({model.state_leg_map.crs}); state_sen_map=({model.state_sen_map.crs}); fitness_landscape=({model.fitness_landscape.crs})'
-    if model.debug: print(f'All CRS are consistent ({model.fitness_landscape.crs}).')
+    assert model.data.crs == model.space.crs, f'CRS mismatch: data=({model.precincts.crs}); space=({model.fitness_landscape.crs})'
+
+def setup_datacollector(model):
+    # Set up statistics the data collector
+    model.unhappy = 0
+    model.unhappy_red = 0
+    model.unhappy_blue = 0
+    model.happy = 0
+    model.happy_blue = 0
+    model.happy_red = 0
+    model.total_moves = 0
+    
+    model.red_congdist_seats = 0
+    model.blue_congdist_seats = 0
+    model.tied_congdist_seats = 0
+
+    model.red_state_house_seats = 0
+    model.blue_state_house_seats = 0
+    model.tied_state_house_seats = 0
+    model.red_state_senate_seats = 0
+    model.blue_state_senate_seats = 0
+    model.tied_state_senate_seats = 0
+    model.efficiency_gap = 0
+    model.mean_median = 0
+    model.declination = 0
+    model.projected_winner = None
+    model.projected_margin = 0
+    model.variance = 0 # TODO: create variance statistic for population distribution across electoral districts (to check if map valid)
+    model.change_map = 0 # TODO: create statistic for change in map square kilometers (energy)
+    model.datacollector = mesa.DataCollector(
+        {'unhappy': 'unhappy', 
+        'unhappy_red': 'unhappy_red',
+        'unhappy_blue': 'unhappy_blue',
+        'happy': 'happy',
+        'happy_red': 'happy_red',
+        'happy_blue': 'happy_blue',
+        'red_congressional_seats': 'red_congressional_seats',
+        'blue_congressional_seats': 'blue_congressional_seats',
+        'tied_congressional_seats': 'tied_congressional_seats',
+        'variance': 'variance',
+        'red_state_house_seats': 'red_state_house_seats',
+        'blue_state_house_seats': 'blue_state_house_seats',
+        'tied_state_house_seats': 'tied_state_house_seats',
+        'red_state_senate_seats': 'red_state_senate_seats',
+        'blue_state_senate_seats': 'blue_state_senate_seats',
+        'tied_state_senate_seats': 'tied_state_senate_seats',
+        'efficiency_gap': 'efficiency_gap',
+        'mean_median': 'mean_median',
+        'declination': 'declination',
+        'control': 'control',
+        'projected_winner': 'projected_winner',
+        'projected_margin': 'projected_margin',
+        'control': 'control',
+        'total_moves': 'total_moves',
+        'change_map': 'change_map'
+        })
+
+def create_precincts(model):
+    # Select relevant columns
+    precinct_data = model.data[['VTDID', 'PCTNAME', 'PCTCODE', 
+                                'COUNTYNAME', 'COUNTYCODE', 'COUNTYFIPS', 
+                                'CONGDIST', 'MNSENDIST', 'MNLEGDIST',
+                                'USPRSR', 'USPRSDFL', 'USPRSTOTAL',
+                                'Shape_Leng', 'Shape_Area', 'geometry']]
+    # Create precinct agents and add to the model
+    ac_precincts = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'precinct'})
+    model.precincts = ac_precincts.from_GeoDataFrame(precinct_data, unique_id='VTDID')
+    model.num_precincts = len(model.precincts)
+    model.space.add_precincts(model.precincts)
+    print(f'Number of precincts added: {model.num_precincts}')
+
+def create_counties(model):
+    # Select relevant columns
+    county_data = model.data[['COUNTYNAME', 'COUNTYCODE', 'COUNTYFIPS', 
+                            'USPRSR', 'USPRSDFL', 'USPRSTOTAL',
+                            'RUCA', 'RUCA2', 'RUCACAT', 'HOUSEHOLDS', 
+                            'HOUSING_UNITS', 'PERSONS_PER_HOUSEHOLD', 
+                            # 'PER_CAPITA_INCOME', 'MEDIAN_HOUSEHOLD_INCOME',
+                            # 'MEDIAN_VALUE_HOUSING_UNITS', 'MEDIAN_GROSS_RENT', 
+                            'TOTPOP', 'TOTPOP_SHR', 'CAPACITY', 'CAPACITY_SHR', 
+                            'POPDENS', 'REL_POPDENS', 'Shape_Leng', 'Shape_Area',
+                            'geometry']]
+    # Aggregate data by county
+    agg_funcs = {
+        'COUNTYCODE': 'first',
+        'COUNTYFIPS': 'first',
+        'USPRSR': 'sum',
+        'USPRSDFL': 'sum',
+        'USPRSTOTAL': 'sum',
+        'RUCA': 'first',
+        'RUCA2': 'first',
+        'RUCACAT': 'first',
+        'HOUSEHOLDS': 'first',
+        'HOUSING_UNITS': 'first',
+        'PERSONS_PER_HOUSEHOLD': 'first',
+        # 'PER_CAPITA_INCOME': 'first',
+        # 'MEDIAN_HOUSEHOLD_INCOME': 'first',
+        # 'MEDIAN_VALUE_HOUSING_UNITS': 'first',
+        # 'MEDIAN_GROSS_RENT': 'first',
+        'TOTPOP': 'first',
+        'TOTPOP_SHR': 'first',
+        'CAPACITY': 'first',
+        'CAPACITY_SHR': 'first',
+        'POPDENS': 'first',
+        'REL_POPDENS': 'first',
+        'Shape_Leng': 'sum',
+        'Shape_Area': 'sum',
+    }
+    county_data = county_data.dissolve(by='COUNTYNAME', aggfunc=agg_funcs).reset_index()
+    # Create county agents and add to the model
+    ac_c = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'county'})
+    model.counties = ac_c.from_GeoDataFrame(county_data, unique_id='COUNTYFIPS')
+    model.n_counties = len(model.counties)
+    model.space.add_counties(model.counties)
+    print(f'Number of counties added: {model.n_counties}')
+
+def create_state_legislatures(model):
+    pass
+
+def create_congressional_districts(model):
+    # Select relevant columns and aggregate data by congressional district
+    congdist_data = model.data[['CONGDIST',
+                              'USPRSR', 'USPRSDFL', 'USPRSTOTAL',
+                              'Shape_Leng', 'Shape_Area', 'geometry']]
+    congdist_data = congdist_data.dissolve(by='CONGDIST', aggfunc='sum').reset_index()
+    # Create congressional district agents and add to the model
+    ac_congdist = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'congressional'})
+    model.congdists = ac_congdist.from_GeoDataFrame(congdist_data, unique_id='CONGDIST')
+    model.num_congdists = len(model.congdists)
+    model.space.add_districts(model.congdists)
+    print(f'Number of congressional districts added: {model.num_congdists}')
 
 def create_population(model):
     '''
@@ -28,100 +166,38 @@ def create_population(model):
     # Initialize total state capacity
     model.total_cap = 0
 
-    # Add agents to the space per county
     for county in model.counties:
-
         # Determine initial number of people in the county
         pop_county = ceil(county.TOTPOP_SHR * model.npop)
         # Set county capacity (update state total capacity)
         county.capacity = ceil((county.CAPACITY / county.TOTPOP) * pop_county * model.capacity_mul)
         model.total_cap += county.capacity
-        if model.debug: print(f'County {county.unique_id} (District: {model.space.county_district_map[county.unique_id]}) has {pop_county} people and {county.capacity} capacity')
-        rep_v_dem_ratio = county.PRES_R_2020 / (county.PRES_D_2020 + county.PRES_R_2020)
-        # Add people to the county
+        # print(f'County {county.unique_id} has {pop_county} people and {county.capacity} capacity')
+        rep_v_dem_ratio = county.USPRSR / (county.USPRSDFL + county.USPRSR)
+        # print(f'Rep v Dem ratio: {rep_v_dem_ratio}')
+
         for _ in range(pop_county):
+            random_precinct = model.space.get_precinct_by_id(random.choice(county.precincts))
             person = PersonAgent(
                 unique_id=uuid.uuid4().int,
                 model=model,
                 crs=model.space.crs,
-                geometry=county.random_point(),
+                geometry=random_precinct.random_point(), # put in precinct
                 is_red=rep_v_dem_ratio > random.random(),
-                district_id=model.space.county_district_map[county.unique_id],
-                county_id=county.unique_id,
+                precinct_id=random_precinct.unique_id,
+                county_id=model.space.precinct_county_map[random_precinct.unique_id],
+                district_id=model.space.precinct_congdist_map[random_precinct.unique_id],
             )
-            model.space.add_person_to_county(person, new_county_id=county.unique_id)
+            model.space.add_person_to_precinct(person, new_precinct_id=random_precinct.unique_id)
             model.schedule.add(person)
             model.population.append(person)
 
             # Update party counts
-            if person.is_red: 
+            if person.color == 'Red':
                 model.nreps += 1
-            else: 
+            elif person.color == 'Blue':
                 model.ndems += 1
-
-        # Add county to the scheduler
-        model.schedule.add(county)
 
     # Update the number of people in the model
     model.npop = len(model.population)
-    if model.debug: print('People created.')
-
-def create_counties_districts(model):
-    '''
-    Create counties and US House districts agents for the model.
-
-    county_id: column name for county names of dataframe consisting initial plan data
-    district_id: column name for electoral district names of dataframe consisting initial plan data
-    '''
-    # Set up congressional electoral districts for simulating gerrymandering/electoral processes
-    ac_cong = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'congressional'})
-    model.USHouseDistricts = ac_cong.from_GeoDataFrame(model.initial_plan, unique_id='CONGDIST')
-    model.num_USHouseDistricts = len(model.USHouseDistricts)
-    model.space.add_districts(model.USHouseDistricts)
-
-    # # Set up state house electoral districts for simulating state house elections
-    # ac_leg = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'state-house'})
-    # model.StateHouseDistricts = ac_leg.from_GeoDataFrame(model.state_leg_map, unique_id='LEGDIST')
-    # model.num_StateHouseDistricts = len(model.StateHouseDistricts)
-    # # model.space.add_districts(model.StateHouseDistricts)
-
-    # # Set up state senate electoral districts for simulating state senate elections
-    # ac_sen = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'state-senate'})
-    # model.StateSenateDistricts = ac_sen.from_GeoDataFrame(model.state_sen_map, unique_id='SENDIST')
-    # model.num_StateSenateDistricts = len(model.StateSenateDistricts)
-    # # model.space.add_districts(model.StateSenateDistricts)
-
-    # Set up counties for simulating population shifts
-    ac_c = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'county'})
-    model.counties = ac_c.from_GeoDataFrame(model.fitness_landscape, unique_id='COUNTY')
-    model.n_counties = len(model.counties)
-    model.space.add_counties(model.counties)
-
-    # for district in model.USHouseDistricts:
-        # Rename unique_id
-        # setattr(district, 'unique_id', f'{district.type}-{district.unique_id}')
-        # Add districts to the scheduler
-        # model.schedule.add(district)
-
-    # for district in model.StateHouseDistricts:
-        # setattr(district, 'unique_id', f'{district.type}-{district.unique_id}')
-        # model.schedule.add(district)
-
-    # for district in model.StateSenateDistricts:
-        # setattr(district, 'unique_id', f'{district.type}-{district.unique_id}')
-        # model.schedule.add(district)
-
-    # for county in model.counties:
-        # setattr(county, 'unique_id', f'{county.type}-{county.unique_id}')
-        # model.schedule.add(county)
-
-    # Update the county to congressional district map
-    model.space.update_county_to_district_map(model.counties, model.USHouseDistricts)
-
-    if model.debug:
-        print('# of electoral districts/counties:')
-        print('\tCongressional: ', model.num_USHouseDistricts)
-        # print('\tState House: ', model.num_StateHouseDistricts)
-        # print('\tState Senate: ', model.num_StateSenateDistricts)
-        print('\tCounties: ', model.n_counties)
-        print('Counties and districts created!')
+    print(f'Number of people added: {model.npop}')

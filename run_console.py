@@ -3,45 +3,33 @@ import os
 
 from gerrysort.model import GerrySort
 
-debug = False
-
 # Set number of experiment trials
-trials = 5
+trials = 1
 
 # Set the parameters for the model
 state = 'MN'
-max_iters = 5
+max_iters = 1
 npop=5800               # 5,800,000 people in MN
-gerrymandering=True
+gerrymandering=False
 sorting=True
 tolarence=0.5
 beta=100.0              # 0 means that moving decision is totally random
 n_proposed_maps=5
 n_moving_options=5
 moving_cooldown=0
-distance_decay=0.0      # 0.0 means that distance will not affect utility of moving options
+distance_decay=1.0      # 0.0 means that distance will not affect utility of moving options
 capacity_mul=1.0
 
 # Open the data
-print(f'Loading {state} data...')
-ensemble = gpd.read_file(os.path.join('data/processed_states', state, state + '_CONGDIST_ensemble.geojson'))
-initial_plan = gpd.read_file(os.path.join('data/processed_states', state, state + '_CONGDIST_initial.geojson'))
-state_leg_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_LEGDIST.geojson'))
-state_sen_map = gpd.read_file(os.path.join('data/processed_states', state, state + '_SENDIST.geojson'))
-fitness_landscape = gpd.read_file(os.path.join('data/processed_states', state, state + '_FitnessLandscape.geojson'))
+print(f'Loading {state} data..\n')
+data = gpd.read_file(os.path.join('data/archive/testing/MN_precincts_election_results_2020.geojson'))
 
-print(f'Conducting {trials} experiments...\n')
 for i in range(trials):
-    print(f'Experiment {i + 1} started...')
+    print(f'Experiment {i + 1}/{trials} started...')
     # Create the model
     model = GerrySort(
-        debug=debug,
         state=state,
-        ensemble=ensemble,
-        initial_plan=initial_plan,
-        state_leg_map=state_leg_map,
-        state_sen_map=state_sen_map,
-        fitness_landscape=fitness_landscape,
+        data=data,
         max_iters=max_iters,
         npop=npop,
         gerrymandering=gerrymandering,
@@ -58,20 +46,20 @@ for i in range(trials):
     # Run the model
     model.run_model()
 
-    # Print the results
-    print(f'Experiment {i + 1} completed.')
-    print('Model converged after: {} iterations'.format(model.iter))
-    print('Statistics:')
-    print(f'\tUnhappy: {model.unhappy} | Unhappy Red: {model.unhappy_red} | Unhappy Blue: {model.unhappy_blue}')
-    print(f'\tHappy: {model.happy} | Happy Red: {model.happy_red} | Happy Blue: {model.happy_blue}')   
-    print(f'\tCongressional Seats | Red: {model.red_congressional_seats} | Blue: {model.blue_congressional_seats} | Tied: {model.tied_congressional_seats}')
-    print(f'\t\tEfficiency Gap: {model.efficiency_gap}')
-    print(f'\t\tMean Median: {model.mean_median}')
-    print(f'\t\tDeclination: {model.declination}')
-    print(f'\tControl: {model.control} | Projected Margin: {model.projected_margin}')
-    # print(f'\t\tState House Seats | Red: {model.red_state_house_seats} | Blue: {model.blue_state_house_seats} | Tied: {model.tied_state_house_seats}')
-    # print(f'\t\tState Senate Seats | Red: {model.red_state_senate_seats} | Blue: {model.blue_state_senate_seats} | Tied: {model.tied_state_senate_seats}')
-    print('-----------------------------------\n')
+    # # Print the results
+    # print(f'Experiment {i + 1} completed.')
+    # print('Model converged after: {} iterations'.format(model.iter))
+    # print('Statistics:')
+    # print(f'\tUnhappy: {model.unhappy} | Unhappy Red: {model.unhappy_red} | Unhappy Blue: {model.unhappy_blue}')
+    # print(f'\tHappy: {model.happy} | Happy Red: {model.happy_red} | Happy Blue: {model.happy_blue}')   
+    # print(f'\tCongressional Seats | Red: {model.red_congdist_seats} | Blue: {model.blue_congdist_seats} | Tied: {model.tied_congdist_seats}')
+    # print(f'\t\tEfficiency Gap: {model.efficiency_gap}')
+    # print(f'\t\tMean Median: {model.mean_median}')
+    # print(f'\t\tDeclination: {model.declination}')
+    # print(f'\tControl: {model.control} | Projected Margin: {model.projected_margin}')
+    # # print(f'\t\tState House Seats | Red: {model.red_state_house_seats} | Blue: {model.blue_state_house_seats} | Tied: {model.tied_state_house_seats}')
+    # # print(f'\t\tState Senate Seats | Red: {model.red_state_senate_seats} | Blue: {model.blue_state_senate_seats} | Tied: {model.tied_state_senate_seats}')
+    # print('-----------------------------------\n')
 
     # # Prepare a list to store county data
     # county_data = []

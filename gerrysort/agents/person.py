@@ -10,7 +10,7 @@ class PersonAgent(mg.GeoAgent):
     utility: float
     is_unhappy: bool
 
-    def __init__(self, unique_id, model, geometry, crs, is_red, district_id, county_id):
+    def __init__(self, unique_id, model, geometry, crs, is_red, precinct_id, county_id, district_id):
         '''
         Initialize the person agent.
 
@@ -26,69 +26,73 @@ class PersonAgent(mg.GeoAgent):
              
         '''
         super().__init__(unique_id, model, geometry, crs)
-        self.is_red = is_red
+        self.color = 'Red' if is_red else 'Blue'
         self.is_unhappy = None
-        self.district_id = district_id
+        self.precinct_id = precinct_id
         self.county_id = county_id
+        self.district_id = district_id
         self.utility = 0
         self.last_moved = float('inf')
     
-    def calculate_utility(self, county_id, district_id, A=1, alpha=(1, 1, 1, 1)): 
-        '''
-        Recalculates the agent's utility score.
-        
+    def calculate_utility(self, precinct_id, A=1, alpha=(1, 1, 1, 1)): 
+        '''        
         Formula: A * (X1**a1 * X2**a2 * X3**a3) * X4
 
         Variables:
-            X1: party affiliation match
-            X2: electoral district match
-            X3: county match
-            X4: capacity penalty
+            X1: precinct party majority match
+            X2: county party majority match 
+            X3: electoral district party majority match
+            X4: urbanicity match
         '''
-        # Party affilliation matching county party majority
-        county = self.model.space.get_county_by_id(county_id)
-        if self.is_red and county.red_pct > 0.5:
-            X1 = 1
-        elif not self.is_red and county.red_pct < 0.5:
+        # Precinct matching precinct
+        precinct = self.model.space.get_precinct_by_id(precinct_id)
+        if self.color == precinct.color:
             X1 = 1
         else:
-            X1 = 0.5
-
-        # Party affilliation matching district party majority
-        district = self.model.space.get_district_by_id(district_id)
-        if self.is_red and district.red_pct > 0.5:
-            X2 = 1
-        elif not self.is_red and district.red_pct < 0.5:
+            X1 = 0.25
+        # County matching precinct
+        county = self.model.space.get_county_by_id(precinct.COUNTYFIPS)
+        if self.color == county.color:
             X2 = 1
         else:
-            X2 = 0.75
-
+            X2 = 0.5
+        # Electoral district matching precinct
+        district = self.model.space.get_district_by_id(precinct.CONGDIST)
+        if self.color == district.color:
+            X3 = 1
+        else:
+            X3 = 0.75
         # Urbanicity matching county urbanicity
-        if self.is_red and county.RUCACAT == 'rural':
-            X3 = 1
-        elif self.is_red and county.RUCACAT == 'small_town':
-            X3 = 1
-        elif self.is_red and county.RUCACAT == 'large_town':
-            X3 = 0.5
-        elif not self.is_red and county.RUCACAT == 'urban':
-            X3 = 1
-        elif not self.is_red and county.RUCACAT == 'large_town':
-            X3 = 1
-        elif not self.is_red and county.RUCACAT == 'small_town':
-            X3 = 0.5
+        if self.color == 'Red' and county.RUCACAT == 'rural':
+            X4 = 1
+        elif self.color == 'Red' and county.RUCACAT == 'small_town':
+            X4 = 1
+        elif self.color == 'Red' and county.RUCACAT == 'large_town':
+            X4 = 0.75
+        elif self.color == 'Blue' and county.RUCACAT == 'urban':
+            X4 = 1
+        elif self.color == 'Blue' and county.RUCACAT == 'large_town':
+            X4 = 1
+        elif self.color == 'Blue' and county.RUCACAT == 'small_town':
+            X4 = 0.75
         else:
-            X3 = .25
-
+            X4 = .5
         # Return utility
         a1, a2, a3, a4 = alpha
-        utility = A * (X1**a1 * X2**a2 * X3**a3)
+        utility = A * (X1**a1 * X2**a2 * X3**a3 * X4**a4)
         return utility
+    
+    def calculate_discounted_utility(self, utility, new_location):
+        max_dist_dict = {'MN': 475}
+        max_dist = max_dist_dict[self.model.state]
+        distance = great_circle((self.geometry.y, self.geometry.x), (new_location.y, new_location.x)).miles / max_dist
+        return utility * (1 - (self.model.distance_decay * distance))
 
     def update_utility(self):
         '''
         Updates the agent's utility score and checks if it is happy/unhappy.
         '''
-        self.utility = self.calculate_utility(self.county_id, self.district_id)
+        self.utility = self.calculate_utility(self.precinct_id)
         self.is_unhappy = self.utility < self.model.tolarence
         # print('Utility: ', self.utility, 'Is Rep: ', self.is_red, 'Unhappy: ', self.is_unhappy, 'Tolerance: ', self.model.tolarence)
 
@@ -121,70 +125,58 @@ class PersonAgent(mg.GeoAgent):
         moving_options: dictionary storing id, utility, and position of potential moving options
         U_current: utility value of the current location
         """
-        potential_utilities = [option['utility'] for option in moving_options.values()]
+        potential_utilities = [option['discounted_utility'] for option in moving_options.values()]
         probabilities = self.calculate_probabilities(U_current, potential_utilities)
         
         chosen_key = np.random.choice(list(moving_options.keys()), p=probabilities)
         chosen_option = moving_options[chosen_key]
 
         if chosen_key != '-1':
-            self.model.space.remove_person_from_county(self)
-            self.model.space.add_person_to_county(
+            self.model.space.remove_person_from_precinct(self)
+            self.model.space.add_person_to_precinct(
                     self,
-                    new_county_id=chosen_option['county_id'],
+                    new_precinct_id=chosen_option['precinct_id'],
                     new_position=chosen_option['position']
                 )            
             self.last_moved = 0
             self.model.total_moves += 1
 
-        # if self.model.debug:
         #     print('\t\tPotential Utilities: ', potential_utilities)
         #     print('\t\tProbabilities: ', probabilities)
         #     print('\t\tChosen Key: ', chosen_key)
 
     def sort(self):
-        '''
-        Simulates the self-sorting phenomonon.
-        '''
         # Create dictionary with potental moving options
         moving_options = {}
         moving_options['-1'] = {
+            'position': self.geometry,
+            'precinct_id': self.precinct_id,
             'county_id': self.county_id,
             'district_id': self.district_id,
             'utility': self.utility,
-            'position': self.geometry
+            'discounted_utility': self.utility
         }
-
-        # Consider an x number of random potential moving options
         option_cnt = 0
         while option_cnt < self.model.n_moving_options:
-            # Select random county (not at capacity)
+            # Find counties that are not at capacity and select one at random
             not_full_capacity_counties = [county for county in self.model.counties if county.num_people < county.capacity and county.unique_id != self.county_id]
-            # Filter out current county
             random_county = random.choice(not_full_capacity_counties)
-
-            # Check if county is at capacity
-            while random_county.num_people >= random_county.capacity:
-                continue
-            option_cnt += 1
-
-            # Find random county instance and generate random point in county
-            random_district_id = self.model.space.county_district_map[random_county.unique_id]
-            new_location = random_county.random_point()
-
+            # Pick a random precinct in the county and generate a new location
+            precinct = self.model.space.get_precinct_by_id(random.choice(random_county.precincts))
+            new_location = precinct.random_point()
             # Calculate discounted utility
-            random_county_utility = self.calculate_utility(random_county.unique_id, random_district_id)
-            # TODO: Do we consider a discounted utility based on distance to potential relocation spot?
-            MAX_DIST = 475 # normalize distance by max distance (MN: 475 miles) (Used for normalizing distance between 0-1)
-            distance = great_circle((self.geometry.y, self.geometry.x), (new_location.y, new_location.x)).miles  / MAX_DIST
-            discounted_utility = random_county_utility * (1 - (self.model.distance_decay * distance)) # DONE: Reformulated this! prev: random_county_utility*(distance_decay*(1-distance))
+            utility = self.calculate_utility(precinct.unique_id)
+            discounted_utility = self.calculate_discounted_utility(utility, new_location)
 
+            option_cnt += 1
             # Store moving options
             moving_options[f'{option_cnt}'] = {
+                'position': new_location,
+                'precinct_id': precinct.unique_id,
                 'county_id': random_county.unique_id,
-                'district_id': random_district_id,
-                'utility': discounted_utility,
-                'position': new_location
+                'district_id': self.model.space.precinct_congdist_map[precinct.unique_id],
+                'utility': utility,
+                'discounted_utility': discounted_utility
             }
         
         # Simulate movement

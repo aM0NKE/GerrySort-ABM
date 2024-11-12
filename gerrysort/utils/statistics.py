@@ -15,100 +15,88 @@ def unhappy_happy(model):
     for agent in model.population:
         if agent.is_unhappy:
             model.unhappy += 1
-            if agent.is_red:
+            if agent.color == 'Red':
                 model.unhappy_red += 1
-            else:
+            elif agent.color == 'Blue':
                 model.unhappy_blue += 1
         elif not agent.is_unhappy:
             model.happy += 1
-            if agent.is_red:
+            if agent.color == 'Red':
                 model.happy_red += 1
-            else:
+            elif agent.color == 'Blue':
                 model.happy_blue += 1
 
-def red_congressional_seats(model):
-    '''
-    Return the number of US House electoral districts that favor the Republican party.
-    '''
-    num_red = 0
-    for agent in model.USHouseDistricts:
-        if agent.red_pct > 0.5:
-            num_red += 1
-    model.red_congressional_seats = num_red
+def congdist_seats(model):
+    model.red_congdist_seats = 0
+    model.blue_congdist_seats = 0
+    model.tied_congdist_seats = 0
+    for dist in model.congdists:
+        if dist.color == 'Red':
+            model.red_congdist_seats += 1
+        elif dist.color == 'Blue':
+            model.blue_congdist_seats += 1
+        else:
+            model.tied_congdist_seats += 1
 
-def blue_congressional_seats(model):
-    '''
-    Return the number of US House electoral districts that favor the Democratic party.
-    '''
-    num_blue = 0
-    for agent in model.USHouseDistricts:
-        if agent.red_pct < 0.5:
-            num_blue += 1
-    model.blue_congressional_seats = num_blue
+def legdist_seats(model):
+    pass
 
-def tied_congressional_seats(model):
-    '''
-    Return the number of US House electoral districts that are tied.
-    '''
-    model.tied_congressional_seats = model.num_USHouseDistricts - model.red_congressional_seats - model.blue_congressional_seats
+def sendist_seats(model):
+    pass
 
-def red_state_house_seats(model):
-    '''
-    Return the number of state house seats that favor the Republican party.
-    '''
-    num_red = 0
-    for agent in model.StateHouseDistricts:
-        if agent.red_pct > 0.5:
-            num_red += 1
-    model.red_state_house_seats = num_red
+# def red_state_house_seats(model):
+#     '''
+#     Return the number of state house seats that favor the Republican party.
+#     '''
+#     num_red = 0
+#     for agent in model.StateHouseDistricts:
+#         if agent.red_pct > 0.5:
+#             num_red += 1
+#     model.red_state_house_seats = num_red
 
-def blue_state_house_seats(model):
-    '''
-    Return the number of state house seats that favor the Democratic party.
-    '''
-    num_blue = 0
-    for agent in model.StateHouseDistricts:
-        if agent.red_pct < 0.5:
-            num_blue += 1
-    model.blue_state_house_seats = num_blue
+# def blue_state_house_seats(model):
+#     '''
+#     Return the number of state house seats that favor the Democratic party.
+#     '''
+#     num_blue = 0
+#     for agent in model.StateHouseDistricts:
+#         if agent.red_pct < 0.5:
+#             num_blue += 1
+#     model.blue_state_house_seats = num_blue
 
-def tied_state_house_seats(model):
-    '''
-    Return the number of state house seats that are tied.
-    '''
-    model.tied_state_house_seats = model.num_StateHouseDistricts - model.red_state_house_seats - model.blue_state_house_seats
+# def tied_state_house_seats(model):
+#     '''
+#     Return the number of state house seats that are tied.
+#     '''
+#     model.tied_state_house_seats = model.num_StateHouseDistricts - model.red_state_house_seats - model.blue_state_house_seats
 
-def red_state_senate_seats(model):
-    '''
-    Return the number of state senate seats that favor the Republican party.
-    '''
-    num_red = 0
-    for agent in model.StateSenateDistricts:
-        if agent.red_pct > 0.5:
-            num_red += 1
-    model.red_state_senate_seats = num_red
+# def red_state_senate_seats(model):
+#     '''
+#     Return the number of state senate seats that favor the Republican party.
+#     '''
+#     num_red = 0
+#     for agent in model.StateSenateDistricts:
+#         if agent.red_pct > 0.5:
+#             num_red += 1
+#     model.red_state_senate_seats = num_red
 
-def blue_state_senate_seats(model):
-    '''
-    Return the number of state senate seats that favor the Democratic party.
-    '''
-    num_blue = 0
-    for agent in model.StateSenateDistricts:
-        if agent.red_pct < 0.5:
-            num_blue += 1
-    model.blue_state_senate_seats = num_blue
+# def blue_state_senate_seats(model):
+#     '''
+#     Return the number of state senate seats that favor the Democratic party.
+#     '''
+#     num_blue = 0
+#     for agent in model.StateSenateDistricts:
+#         if agent.red_pct < 0.5:
+#             num_blue += 1
+#     model.blue_state_senate_seats = num_blue
 
-def tied_state_senate_seats(model):
-    '''
-    Return the number of state senate seats that are tied.
-    '''
-    model.tied_state_senate_seats = model.num_StateSenateDistricts - model.red_state_senate_seats - model.blue_state_senate_seats
+# def tied_state_senate_seats(model):
+#     '''
+#     Return the number of state senate seats that are tied.
+#     '''
+#     model.tied_state_senate_seats = model.num_StateSenateDistricts - model.red_state_senate_seats - model.blue_state_senate_seats
 
 def projected_winner(model):
-    '''
-    Returns the party that has both a majority in state house and senate.
-    (Returns 'Tied' if no party has a majority in both chambers)
-    '''
     # if model.red_state_house_seats > model.blue_state_house_seats:
     #     if model.red_state_senate_seats > model.blue_state_senate_seats:
     #         model.projected_winner = 'Republican'
@@ -119,9 +107,9 @@ def projected_winner(model):
     #     model.projected_winner = 'Tied'
 
     # NOTE: Alternative option (only considers the US House)
-    if model.red_congressional_seats > model.blue_congressional_seats:
+    if model.red_congdist_seats > model.blue_congdist_seats:
         model.projected_winner = 'Republican'
-    elif model.red_congressional_seats < model.blue_congressional_seats:
+    elif model.red_congdist_seats < model.blue_congdist_seats:
         model.projected_winner = 'Democratic'
     else:
         model.projected_winner = 'Tied'
@@ -140,9 +128,9 @@ def projected_margin(model):
 
     # NOTE: Alternative option (only considers the US House)
     if model.projected_winner == 'Republican':
-        model.projected_margin = model.red_congressional_seats - model.blue_congressional_seats
+        model.projected_margin = model.red_congdist_seats - model.blue_congdist_seats
     elif model.projected_winner == 'Democratic':
-        model.projected_margin = model.blue_congressional_seats - model.red_congressional_seats
+        model.projected_margin = model.blue_congdist_seats - model.red_congdist_seats
     else:
         model.projected_margin = 0
 
@@ -214,7 +202,7 @@ def variance(model):
     Calculate the variance of the population distribution across electoral districts.
     '''
     # Calculate the population variance
-    population_cnts = [district.num_people for district in model.USHouseDistricts]
+    population_cnts = [district.num_people for district in model.congdists]
     mean_population = sum(population_cnts) / len(population_cnts)
     model.variance = sum((x - mean_population) ** 2 for x in population_cnts) / len(population_cnts)
 

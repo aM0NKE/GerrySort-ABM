@@ -19,7 +19,7 @@ class HappinessElement(mesa.visualization.TextElement):
     
 class CongressionalElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Projected Congressional Seats: D: {model.blue_congressional_seats} | R: {model.red_congressional_seats} | T: {model.tied_congressional_seats} (Change Map: {model.change_map})"
+        return f"Projected Congressional Seats: D: {model.blue_congdist_seats} | R: {model.red_congdist_seats} | T: {model.tied_congdist_seats} (Change Map: {model.change_map})"
     
 class StateHouseElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -40,7 +40,7 @@ class MetricsElement(mesa.visualization.TextElement):
 model_params = {
     "state": mesa.visualization.Choice("State", value="MN", choices=["MN", "WI", "MI", "PA", "GA", "LA", "TX"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
-    "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
+    "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", False),
     "max_iters": mesa.visualization.Slider("Max Iterations", 10, 2, 100, 1),
     "npop": mesa.visualization.Slider("Number of Agents", 5800, 100, 10000, 100),
     "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.50, 0.00, 1.00, 0.05),
@@ -61,7 +61,7 @@ def schelling_draw(agent):
     elif isinstance(agent, PersonAgent):
         portrayal["radius"] = 1
         portrayal["shape"] = "circle"
-        portrayal["color"] = "Red" if agent.is_red else "Blue"
+        portrayal["color"] = agent.color
     return portrayal
 
 model_params_element = ModelParamsElement()
@@ -86,9 +86,9 @@ happy_chart = mesa.visualization.ChartModule(
 )
 congressional_seat_share_chart = mesa.visualization.ChartModule(
     [
-        {"Label": "red_congressional_seats", "Color": "Red"},
-        {"Label": "blue_congressional_seats", "Color": "Blue"},
-        {"Label": "tied_congressional_seats", "Color": "Grey"},
+        {"Label": "red_congdist_seats", "Color": "Red"},
+        {"Label": "blue_congdist_seats", "Color": "Blue"},
+        {"Label": "tied_congdist_seats", "Color": "Grey"},
     ]
 )
 state_house_seat_share_chart = mesa.visualization.ChartModule(
