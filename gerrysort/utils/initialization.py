@@ -93,8 +93,6 @@ def create_counties(model):
                             'USPRSR', 'USPRSDFL', 'USPRSTOTAL',
                             'RUCA', 'RUCA2', 'RUCACAT', 'HOUSEHOLDS', 
                             'HOUSING_UNITS', 'PERSONS_PER_HOUSEHOLD', 
-                            # 'PER_CAPITA_INCOME', 'MEDIAN_HOUSEHOLD_INCOME',
-                            # 'MEDIAN_VALUE_HOUSING_UNITS', 'MEDIAN_GROSS_RENT', 
                             'TOTPOP', 'TOTPOP_SHR', 'CAPACITY', 'CAPACITY_SHR', 
                             'POPDENS', 'REL_POPDENS', 'Shape_Leng', 'Shape_Area',
                             'geometry']]
@@ -129,19 +127,35 @@ def create_counties(model):
     print(f'Number of counties added: {model.n_counties}')
 
 def create_state_legislatures(model):
-    pass
+    # Add state house districts
+    legdist_data = model.data[['MNLEGDIST', 'USPRSR', 'USPRSDFL', 'USPRSTOTAL',
+                            'Shape_Leng', 'Shape_Area', 'geometry']]
+    legdist_data = legdist_data.dissolve(by='MNLEGDIST', aggfunc='sum').reset_index()
+    ac_legdist = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'state_house'})
+    model.legdists = ac_legdist.from_GeoDataFrame(legdist_data, unique_id='MNLEGDIST')
+    model.num_legdists = len(model.legdists)
+    model.space.add_legdists(model.legdists)
+    print(f'Number of state legislative districts added: {model.num_legdists}')
+    # Add state senate districts
+    sendist_data = model.data[['MNSENDIST', 'USPRSR', 'USPRSDFL', 'USPRSTOTAL',
+                            'Shape_Leng', 'Shape_Area', 'geometry']]
+    sendist_data = sendist_data.dissolve(by='MNSENDIST', aggfunc='sum').reset_index()
+    ac_sendist = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'state_senate'})
+    model.sendists = ac_sendist.from_GeoDataFrame(sendist_data, unique_id='MNSENDIST')
+    model.num_sendists = len(model.sendists)
+    model.space.add_sendists(model.sendists)
+    print(f'Number of state senate districts added: {model.num_sendists}')
 
 def create_congressional_districts(model):
     # Select relevant columns and aggregate data by congressional district
-    congdist_data = model.data[['CONGDIST',
-                              'USPRSR', 'USPRSDFL', 'USPRSTOTAL',
+    congdist_data = model.data[['CONGDIST', 'USPRSR', 'USPRSDFL', 'USPRSTOTAL',
                               'Shape_Leng', 'Shape_Area', 'geometry']]
     congdist_data = congdist_data.dissolve(by='CONGDIST', aggfunc='sum').reset_index()
     # Create congressional district agents and add to the model
     ac_congdist = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'congressional'})
     model.congdists = ac_congdist.from_GeoDataFrame(congdist_data, unique_id='CONGDIST')
     model.num_congdists = len(model.congdists)
-    model.space.add_districts(model.congdists)
+    model.space.add_congdists(model.congdists)
     print(f'Number of congressional districts added: {model.num_congdists}')
 
 def create_population(model):
@@ -169,7 +183,9 @@ def create_population(model):
                 is_red=rep_v_dem_ratio > random.random(),
                 precinct_id=random_precinct.unique_id,
                 county_id=model.space.precinct_county_map[random_precinct.unique_id],
-                district_id=model.space.precinct_congdist_map[random_precinct.unique_id],
+                congdist_id=model.space.precinct_congdist_map[random_precinct.unique_id],
+                legdist_id=model.space.precinct_legdist_map[random_precinct.unique_id],
+                sendist_id=model.space.precinct_sendist_map[random_precinct.unique_id]
             )
             model.space.add_person_to_space(person, new_precinct_id=random_precinct.unique_id)
             model.schedule.add(person)

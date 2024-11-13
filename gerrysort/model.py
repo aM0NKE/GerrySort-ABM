@@ -7,11 +7,11 @@ import mesa
 
 class GerrySort(mesa.Model):
     def __init__(self, state='MN', data=None, max_iters=5, 
-                 npop=1000, sorting=True, gerrymandering=True, 
+                 npop=5800, sorting=True, gerrymandering=True, 
                  initial_control='Data', tolarence=0.5, 
                  beta=0.0, ensemble_size=5, epsilon=0.1,
-                 n_moving_options=5, moving_cooldown=5, 
-                 distance_decay=0.5, capacity_mul=1.0):
+                 n_moving_options=5, moving_cooldown=0, 
+                 distance_decay=0.0, capacity_mul=1.0):
         # Set up the scheduler and space
         self.schedule = mesa.time.BaseScheduler(self) # TODO: Look into other schedulers
         self.space = ElectoralDistricts()
@@ -20,17 +20,17 @@ class GerrySort(mesa.Model):
         self.iter = 1
         self.max_iters = max_iters
         # Set model parameters
-        self.gerrymandering = gerrymandering
-        self.sorting = sorting
         self.npop = npop
+        self.sorting = sorting
+        self.gerrymandering = gerrymandering
         self.tolarence = tolarence
-        self.capacity_mul = capacity_mul
+        self.beta = beta
         self.ensemble_size = ensemble_size
         self.epsilon = epsilon
-        self.beta = beta
         self.n_moving_options = n_moving_options
         self.moving_cooldown = moving_cooldown
         self.distance_decay = distance_decay
+        self.capacity_mul = capacity_mul
         # Load GeoData file
         load_data(self, state, data)
         # Initialize model statistics
@@ -38,10 +38,12 @@ class GerrySort(mesa.Model):
         # Create geographical units
         create_precincts(self)
         create_counties(self)
-        # create_state_legislatures(self)
+        create_state_legislatures(self)
         create_congressional_districts(self)
         # Create precinct to county/congressional district map
         self.space.create_precinct_to_county_map(self.precincts)
+        self.space.create_precinct_to_legdist_map(self.precincts)
+        self.space.create_precinct_to_sendist_map(self.precincts)
         self.space.create_precinct_to_congdist_map(self.precincts)
         # Create population
         create_population(self)
@@ -49,6 +51,8 @@ class GerrySort(mesa.Model):
         self.update_majorities(self.precincts)
         self.update_majorities(self.counties)
         self.update_majorities(self.congdists)
+        self.update_majorities(self.legdists)
+        self.update_majorities(self.sendists)
         # Update utility of all agents
         self.update_utilities()
         # Update statistics
@@ -66,10 +70,10 @@ class GerrySort(mesa.Model):
 
     def update_statistics(self, statistics=[unhappy_happy, 
                                             congdist_seats,
-                                        #  legdists_seats, sendists_seats,
-                                         efficiency_gap, mean_median, declination,
-                                         projected_winner, projected_margin, 
-                                         variance]):
+                                            legdist_seats, sendist_seats,
+                                            efficiency_gap, mean_median, declination,
+                                            projected_winner, projected_margin, 
+                                            variance]):
         for stat in statistics:
             stat(self)
 
@@ -109,8 +113,8 @@ class GerrySort(mesa.Model):
         print(f'\tRed Congressional Seats: {self.rep_congdist_seats} | Blue Congressional Seats: {self.dem_congdist_seats} | Tied Congressional Seats: {self.tied_congdist_seats}')
         print(f'\tPopulation counts: {[district.num_people for district in self.congdists]}')
         print(f'\tVariance: {self.variance}')
-        # # print(f'\tRed State House Seats: {self.rep_legdist_seats} | Blue State House Seats: {self.dem_legdist_seats} | Tied State House Seats: {self.tied_sendist_seats}')
-        # # print(f'\tRed State Senate Seats: {self.rep_sendist_seats} | Blue State Senate Seats: {self.dem_sendist_seats} | Tied State Senate Seats: {self.tied_sendist_seats}')
+        print(f'\tRed State House Seats: {self.rep_legdist_seats} | Blue State House Seats: {self.dem_legdist_seats} | Tied State House Seats: {self.tied_sendist_seats}')
+        print(f'\tRed State Senate Seats: {self.rep_sendist_seats} | Blue State Senate Seats: {self.dem_sendist_seats} | Tied State Senate Seats: {self.tied_sendist_seats}')
         print(f'\tEfficiency Gap: {self.efficiency_gap}')
         print(f'\tMean Median: {self.mean_median}')
         print(f'\tDeclination: {self.declination}')
@@ -135,6 +139,8 @@ class GerrySort(mesa.Model):
         self.update_majorities(self.precincts)
         self.update_majorities(self.counties)
         self.update_majorities(self.congdists)
+        self.update_majorities(self.legdists)
+        self.update_majorities(self.sendists)
         # self.update_utilities() # NOTE: probably not needed
         # Update statistics
         self.update_statistics()

@@ -46,7 +46,7 @@ model_params = {
     "npop": mesa.visualization.Slider("Number of Agents", 5800, 100, 10000, 100),
     "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.50, 0.00, 1.00, 0.05),
     "beta": mesa.visualization.Slider("Beta (Temperature)", 100.0, 0.0, 100.0, 10),
-    "ensemble_size": mesa.visualization.Slider("Number of Proposed Maps", 25, 5, 100, 1),
+    "ensemble_size": mesa.visualization.Slider("Number of Proposed Maps", 100, 5, 200, 1),
     "epsilon": mesa.visualization.Slider("Epsilon", 0.10, 0.00, 1.00, 0.05),
     "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 5, 5, 20, 1),
     "distance_decay": mesa.visualization.Slider("Distance Decay", 0.0, 0.0, 1.0, 0.1),
@@ -74,8 +74,6 @@ control_element = ControlElement()
 metrics_element = MetricsElement()
 
 us_lat, us_lon = 39.8, -98.6 # Coords for US
-ga_lat, ga_lon = 32.2, -82.9 # Coords for GA #TODO: Make this dynamic
-mn_lat, mn_lon = 46.3, -94.2 # Coords for MN
 map_element = mg.visualization.MapModule(schelling_draw, [us_lat, us_lon], 4, 850, 850)
 
 happy_chart = mesa.visualization.ChartModule(
@@ -109,18 +107,18 @@ metrics_chart = mesa.visualization.ChartModule(
     [
         {"Label": "change_map", "Color": "Red"},
         {"Label": "efficiency_gap", "Color": "Black"},
-        {"Label": "mean_median", "Color": "Pink"},
-        {"Label": "declination", "Color": "Yellow"},
+        {"Label": "mean_median", "Color": "Yellow"},
+        {"Label": "declination", "Color": "Green"},
     ]
 )
 
 server = mesa.visualization.ModularServer(
     GerrySort,
     [model_params_element, map_element, demographics_element, happy_chart, happiness_element, 
-     congressional_seat_share_chart, congressional_element, control_element,
-    #  state_house_seat_share_chart,  state_house_element, 
-    #  state_senate_seat_share_chart, state_senate_element, control_element, 
-     metrics_chart, metrics_element],
+     metrics_chart, metrics_element, control_element,
+     congressional_seat_share_chart, congressional_element,
+     state_house_seat_share_chart,  state_house_element, 
+     state_senate_seat_share_chart, state_senate_element],
     "GerrySort",
     model_params,
 )

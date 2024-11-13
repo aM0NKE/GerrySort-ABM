@@ -32,7 +32,21 @@ class GeoAgent(mg.GeoAgent):
             self.precincts = []
             self.color = 'Grey'
 
-        if self.type == 'congressional':
+        elif self.type == 'state_senate':
+            self.rep_cnt = 0
+            self.dem_cnt = 0
+            self.num_people = 0
+            self.precincts = []
+            self.color = 'Grey'
+
+        elif self.type == 'state_house':
+            self.rep_cnt = 0
+            self.dem_cnt = 0
+            self.num_people = 0
+            self.precincts = []
+            self.color = 'Grey'
+
+        elif self.type == 'congressional':
             self.rep_cnt = 0
             self.dem_cnt = 0
             self.num_people = 0

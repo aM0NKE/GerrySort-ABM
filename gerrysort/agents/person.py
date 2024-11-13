@@ -8,17 +8,22 @@ class PersonAgent(mg.GeoAgent):
     is_unhappy: bool
     precinct_id: str
     county_id: str
-    district_id: str
+    congdist_id: str
+    legdist_id: str
+    sendist_id: str
     last_moved: int
     color: str
 
-    def __init__(self, unique_id, model, geometry, crs, is_red, precinct_id, county_id, district_id):
+    def __init__(self, unique_id, model, geometry, crs, is_red, precinct_id, 
+                 county_id, congdist_id, legdist_id, sendist_id):
         super().__init__(unique_id, model, geometry, crs)
         self.utility = 0
         self.is_unhappy = None
         self.precinct_id = precinct_id
         self.county_id = county_id
-        self.district_id = district_id
+        self.congdist_id = congdist_id
+        self.legdist_id = legdist_id
+        self.sendist_id = sendist_id
         self.last_moved = float('inf')
         self.color = 'Red' if is_red else 'Blue'
     
@@ -45,7 +50,7 @@ class PersonAgent(mg.GeoAgent):
         else:
             X2 = 0.5
         # Electoral district matching precinct
-        district = self.model.space.get_district_by_id(precinct.CONGDIST)
+        district = self.model.space.get_congdist_by_id(precinct.CONGDIST)
         if self.color == district.color:
             X3 = 1
         else:
@@ -136,7 +141,9 @@ class PersonAgent(mg.GeoAgent):
             'position': self.geometry,
             'precinct_id': self.precinct_id,
             'county_id': self.county_id,
-            'district_id': self.district_id,
+            'congdist_id': self.congdist_id,
+            'legdist_id': self.legdist_id,
+            'sendist_id': self.sendist_id,
             'utility': self.utility,
             'discounted_utility': self.utility
         }
@@ -157,7 +164,9 @@ class PersonAgent(mg.GeoAgent):
                 'position': new_location,
                 'precinct_id': precinct.unique_id,
                 'county_id': random_county.unique_id,
-                'district_id': self.model.space.precinct_congdist_map[precinct.unique_id],
+                'congdist_id': self.model.space.precinct_congdist_map[precinct.unique_id],
+                'legdist_id': self.model.space.precinct_legdist_map[precinct.unique_id],
+                'sendist_id': self.model.space.precinct_sendist_map[precinct.unique_id],
                 'utility': utility,
                 'discounted_utility': discounted_utility
             }
