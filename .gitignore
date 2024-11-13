@@ -161,8 +161,8 @@ cython_debug/
 
 # Folders
 .idea/
-data/
 testing/
+gerrysort_data/
 archive/
 *__MACOSX/
 
