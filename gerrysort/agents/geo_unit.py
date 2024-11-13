@@ -1,42 +1,46 @@
 import mesa_geo as mg
-import random
+from shapely.geometry import Point
 from math import ceil
-from shapely.geometry import Point, Polygon, MultiPolygon
+import random
 
 class GeoAgent(mg.GeoAgent):
     type: str
+    reps: list
+    dems: list
+    rep_cnt: int
+    dem_cnt: int
     num_people: int
-    red_cnt: int
-    blue_cnt: int
-    red_pct: float
-    blue_pct: float
+    capacity: int
+    precincts: list
     color: str
 
     def __init__(self, unique_id, model, geometry, crs, type):
         super().__init__(unique_id, model, geometry, crs)
         self.type = type
         
-        self.num_people = 0
         if self.type == 'precinct':
             self.reps = []
             self.dems = []
+            self.num_people = 0
             self.color = 'Grey'
+
         elif self.type == 'county':
             self.rep_cnt = 0
             self.dem_cnt = 0
+            self.num_people = 0
             self.capacity = 0
             self.precincts = []
             self.color = 'Grey'
+
         if self.type == 'congressional':
             self.rep_cnt = 0
             self.dem_cnt = 0
+            self.num_people = 0
             self.precincts = []
             self.color = 'Grey'
 
     def random_point(self):
-        # Extract bounds of county
         min_x, min_y, max_x, max_y = self.geometry.bounds
-        # Draw random point within bounds
         while not self.geometry.contains(
             random_point := Point(
                 random.uniform(min_x, max_x), random.uniform(min_y, max_y)
@@ -51,6 +55,7 @@ class GeoAgent(mg.GeoAgent):
         else:
             rep_cnt = self.rep_cnt
             dem_cnt = self.dem_cnt
+
         if rep_cnt > dem_cnt:
             self.color = 'Red'
         elif rep_cnt < dem_cnt:
@@ -59,9 +64,6 @@ class GeoAgent(mg.GeoAgent):
             self.color = 'Grey'
 
     def calculate_wasted_votes(self):
-        '''
-        Returns the wasted votes in a geographical unit for the Dem and Rep party.
-        '''
         rep_wasted_votes = 0
         dem_wasted_votes = 0
 
@@ -84,13 +86,3 @@ class GeoAgent(mg.GeoAgent):
         
         return rep_wasted_votes, dem_wasted_votes
     
-    def update_geometry(self, new_geometry):
-        # Print type for debugging
-        # print('NEW new geometry type:', type(new_geometry))
-        old_geometry = self.geometry
-        # check if old geometry is same as new geometry
-        if old_geometry == new_geometry:
-            print('Old and new geometries are the same')
-        else:
-            print('Old and new geometries are different')
-        self.geometry = new_geometry

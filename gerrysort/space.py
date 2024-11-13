@@ -1,7 +1,6 @@
-import mesa_geo as mg
 from .agents.geo_unit import GeoAgent
 
-import geopandas as gpd
+import mesa_geo as mg
 import random
 from typing import Dict
 
@@ -68,7 +67,6 @@ class ElectoralDistricts(mg.GeoSpace):
             precinct.reps.append(person.unique_id)
         elif person.color == 'Blue':
             precinct.dems.append(person.unique_id)
-
         # Update county attributes
         new_county_id = self.precinct_county_map[new_precinct_id]
         county = self.get_county_by_id(new_county_id)
@@ -77,7 +75,6 @@ class ElectoralDistricts(mg.GeoSpace):
             county.rep_cnt += 1
         elif person.color == 'Blue':
             county.dem_cnt += 1
-
         # Update congdist attributes
         new_district_id = self.precinct_congdist_map[new_precinct_id]
         district = self.get_district_by_id(new_district_id)
@@ -86,7 +83,6 @@ class ElectoralDistricts(mg.GeoSpace):
             district.rep_cnt += 1
         elif person.color == 'Blue':
             district.dem_cnt += 1
-
         # Update person attributes
         person.precinct_id = new_precinct_id
         person.county_id = new_county_id
@@ -95,7 +91,6 @@ class ElectoralDistricts(mg.GeoSpace):
             person.geometry = new_position
         else:
             person.geometry = precinct.random_point()
-
         # Add agent to map
         super().add_agents(person)
 
@@ -107,7 +102,6 @@ class ElectoralDistricts(mg.GeoSpace):
             precinct.reps.remove(person.unique_id)
         elif person.color == 'Blue':
             precinct.dems.remove(person.unique_id)
-
         # Update county attributes
         county = self.get_county_by_id(person.county_id)
         county.num_people -= 1
@@ -115,7 +109,6 @@ class ElectoralDistricts(mg.GeoSpace):
             county.rep_cnt -= 1
         elif person.color == 'Blue':
             county.dem_cnt -= 1
-
         # Update congdist attributes
         district = self.get_district_by_id(person.district_id)
         district.num_people -= 1
@@ -123,13 +116,11 @@ class ElectoralDistricts(mg.GeoSpace):
             district.rep_cnt -= 1
         elif person.color == 'Blue':
             district.dem_cnt -= 1
-
         # Clear attributes
         person.precinct_id = None
         person.county_id = None
         person.district_id = None
         person.geometry = None
-
         # Remove agent to map
         super().remove_agent(person)
 

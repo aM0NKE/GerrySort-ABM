@@ -1,38 +1,26 @@
 import mesa_geo as mg
+from geopy.distance import great_circle
 import numpy as np
 import random
-from geopy.distance import great_circle
 
 class PersonAgent(mg.GeoAgent):
-    is_red: bool
-    district_id: str
-    county_id: str
     utility: float
     is_unhappy: bool
+    precinct_id: str
+    county_id: str
+    district_id: str
+    last_moved: int
+    color: str
 
     def __init__(self, unique_id, model, geometry, crs, is_red, precinct_id, county_id, district_id):
-        '''
-        Initialize the person agent.
-
-        Attributes:
-            unique_id (int): unique identifier of the agent
-            model (GerrySort): model the agent is part of
-            geometry (tuple): location coordinates (x, y)
-            is_red (bool): agent's party affiliation
-            district_id (str): electoral district name agent is located in
-            county_id (str): county name agent is located in
-            utility (float): utility value of the agent
-            last_moved (int): counter of the last time step the agent relocated
-             
-        '''
         super().__init__(unique_id, model, geometry, crs)
-        self.color = 'Red' if is_red else 'Blue'
+        self.utility = 0
         self.is_unhappy = None
         self.precinct_id = precinct_id
         self.county_id = county_id
         self.district_id = district_id
-        self.utility = 0
         self.last_moved = float('inf')
+        self.color = 'Red' if is_red else 'Blue'
     
     def calculate_utility(self, precinct_id, A=1, alpha=(1, 1, 1, 1)): 
         '''        
@@ -121,12 +109,12 @@ class PersonAgent(mg.GeoAgent):
         moving_options: dictionary storing id, utility, and position of potential moving options
         U_current: utility value of the current location
         """
+        # Calculate probabilities of moving to each potential new location and choose one
         potential_utilities = [option['discounted_utility'] for option in moving_options.values()]
         probabilities = self.calculate_probabilities(U_current, potential_utilities)
-        
         chosen_key = np.random.choice(list(moving_options.keys()), p=probabilities)
         chosen_option = moving_options[chosen_key]
-
+        # Move agent to new location if chosen
         if chosen_key != '-1':
             self.model.space.remove_person_from_space(self)
             self.model.space.add_person_to_space(
@@ -136,7 +124,9 @@ class PersonAgent(mg.GeoAgent):
                 )            
             self.last_moved = 0
             self.model.total_moves += 1
-
+        else:
+            self.last_moved += 1
+        # Update agent's utility
         self.utility = chosen_option['utility']
 
     def sort(self):
@@ -161,9 +151,8 @@ class PersonAgent(mg.GeoAgent):
             # Calculate discounted utility
             utility = self.calculate_utility(precinct.unique_id)
             discounted_utility = self.calculate_discounted_utility(utility, new_location)
-
-            option_cnt += 1
             # Store moving options
+            option_cnt += 1
             moving_options[f'{option_cnt}'] = {
                 'position': new_location,
                 'precinct_id': precinct.unique_id,
@@ -172,6 +161,6 @@ class PersonAgent(mg.GeoAgent):
                 'utility': utility,
                 'discounted_utility': discounted_utility
             }
-        
         # Simulate movement
         self.simulate_movement(moving_options, self.utility)
+        

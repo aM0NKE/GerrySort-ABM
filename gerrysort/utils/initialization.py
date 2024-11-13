@@ -15,16 +15,9 @@ def load_data(model, state, data):
     if data is None:
         data = gpd.read_file(os.path.join('data/processed_states', state, state + '_precincts_election_results_2020.geojson'))
     model.data = data.to_crs(model.space.crs)
-    check_crs_consistency(model)
-
-def check_crs_consistency(model):
-    '''
-    Checks if the CRS of all GeoDataFrames are consistent.
-    '''
     assert model.data.crs == model.space.crs, f'CRS mismatch: data=({model.precincts.crs}); space=({model.fitness_landscape.crs})'
 
 def setup_datacollector(model):
-    # Set up statistics the data collector
     model.unhappy = 0
     model.unhappy_rep = 0
     model.unhappy_dem = 0
@@ -63,7 +56,6 @@ def setup_datacollector(model):
         'rep_congdist_seats': 'rep_congdist_seats',
         'dem_congdist_seats': 'dem_congdist_seats',
         'tied_congdist_seats': 'tied_congdist_seats',
-        'variance': 'variance',
         'rep_legdist_seats': 'rep_legdist_seats',
         'dem_legdist_seats': 'dem_legdist_seats',
         'tied_legdist_seats': 'tied_legdist_seats',
@@ -73,11 +65,11 @@ def setup_datacollector(model):
         'efficiency_gap': 'efficiency_gap',
         'mean_median': 'mean_median',
         'declination': 'declination',
-        'control': 'control',
         'projected_winner': 'projected_winner',
         'projected_margin': 'projected_margin',
         'control': 'control',
         'total_moves': 'total_moves',
+        'variance': 'variance',
         'change_map': 'change_map'
         })
 
@@ -119,10 +111,6 @@ def create_counties(model):
         'HOUSEHOLDS': 'first',
         'HOUSING_UNITS': 'first',
         'PERSONS_PER_HOUSEHOLD': 'first',
-        # 'PER_CAPITA_INCOME': 'first',
-        # 'MEDIAN_HOUSEHOLD_INCOME': 'first',
-        # 'MEDIAN_VALUE_HOUSING_UNITS': 'first',
-        # 'MEDIAN_GROSS_RENT': 'first',
         'TOTPOP': 'first',
         'TOTPOP_SHR': 'first',
         'CAPACITY': 'first',
@@ -157,19 +145,12 @@ def create_congressional_districts(model):
     print(f'Number of congressional districts added: {model.num_congdists}')
 
 def create_population(model):
-    '''
-    Create and add Person agents for the model.
-    '''
-    # Initialize population list
+    # Initialize model state variables
     model.population = []
-
-    # Initialize party counts
     model.ndems = 0
     model.nreps = 0
-
-    # Initialize total state capacity
     model.total_cap = 0
-
+    # Add people to the model
     for county in model.counties:
         # Determine initial number of people in the county
         pop_county = ceil(county.TOTPOP_SHR * model.npop)
@@ -178,8 +159,6 @@ def create_population(model):
         model.total_cap += county.capacity
         # print(f'County {county.unique_id} has {pop_county} people and {county.capacity} capacity')
         rep_v_dem_ratio = county.USPRSR / (county.USPRSDFL + county.USPRSR)
-        # print(f'Rep v Dem ratio: {rep_v_dem_ratio}')
-
         for _ in range(pop_county):
             random_precinct = model.space.get_precinct_by_id(random.choice(county.precincts))
             person = PersonAgent(
@@ -195,15 +174,14 @@ def create_population(model):
             model.space.add_person_to_space(person, new_precinct_id=random_precinct.unique_id)
             model.schedule.add(person)
             model.population.append(person)
-
             # Update party counts
             if person.color == 'Red':
                 model.nreps += 1
             elif person.color == 'Blue':
                 model.ndems += 1
-    
+    # Add people to the space
     model.space.add_agents(model.population)
-
     # Update the number of people in the model
     model.npop = len(model.population)
     print(f'Number of people added: {model.npop}')
+    

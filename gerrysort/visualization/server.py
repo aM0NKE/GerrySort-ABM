@@ -1,9 +1,9 @@
-import mesa
-import mesa_geo as mg
-
 from ..agents.person import PersonAgent
 from ..agents.geo_unit import GeoAgent
 from ..model import GerrySort
+
+import mesa_geo as mg
+import mesa
 
 class ModelParamsElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -38,7 +38,7 @@ class MetricsElement(mesa.visualization.TextElement):
         return f"EG: {model.efficiency_gap:.2f} | M-M: {model.mean_median:.2f} | Dec: {model.declination:.2f}"
     
 model_params = {
-    "state": mesa.visualization.Choice("State", value="MN", choices=["MN", "WI", "MI", "PA", "GA", "LA", "TX"]),
+    "state": mesa.visualization.Choice("State", value="MN", choices=["MN"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
     "max_iters": mesa.visualization.Slider("Max Iterations", 10, 2, 100, 1),
@@ -56,8 +56,6 @@ def schelling_draw(agent):
     portrayal = {}
     if isinstance(agent, GeoAgent):
         portrayal["color"] = agent.color
-    # elif isinstance(agent, CountyAgent):
-    #     portrayal["color"] = agent.color
     elif isinstance(agent, PersonAgent):
         portrayal["radius"] = 1
         portrayal["shape"] = "circle"
