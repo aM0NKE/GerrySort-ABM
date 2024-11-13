@@ -107,6 +107,7 @@ state_senate_seat_share_chart = mesa.visualization.ChartModule(
 )
 metrics_chart = mesa.visualization.ChartModule(
     [
+        {"Label": "change_map", "Color": "Red"},
         {"Label": "efficiency_gap", "Color": "Black"},
         {"Label": "mean_median", "Color": "Pink"},
         {"Label": "declination", "Color": "Yellow"},

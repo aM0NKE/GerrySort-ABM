@@ -141,17 +141,13 @@ def redistrict(model, plans_list, best_plan):
         for vtdid, new_district in model.current_map[['VTDID', 'CONGDIST']].itertuples(index=False)
         if initial_districts[vtdid] != new_district
     }
-    model.change_map = len(reassigned_precincts) # Number of precincts that changed districts
+    model.change_map = len(reassigned_precincts) / len(model.precincts) # Number of precincts that changed districts
 
     # Update geometry based on new district assignments
     new_map = model.current_map.dissolve(by='CONGDIST', aggfunc='sum').reset_index()
     # Convert crs to model crs
     new_map = new_map.to_crs(model.space.crs)
     new_geometries = new_map.set_index('CONGDIST')['geometry'].to_dict()
-
-    # Plot new map color by congressional district
-    # new_map.plot(column='CONGDIST', cmap='tab20', legend=True)
-    # plt.show()
 
     # Update geometry of each district in model.congdists based on CONGDIST
     for district in model.congdists:
@@ -166,7 +162,7 @@ def update_mapping(model, reassigned_precincts):
 
         # Add precinct to new district
         new_district = model.space.get_district_by_id(district_id)
-        new_district.precincts.append(precinct_id)
+        new_district.precincts.append(precinct_id)        
 
         # Remove precinct from old district
         old_district = model.space.get_district_by_id(model.space.get_precinct_by_id(precinct_id).CONGDIST)
@@ -175,6 +171,14 @@ def update_mapping(model, reassigned_precincts):
         # Update precinct.CONGDIST attribute
         precinct = model.space.get_precinct_by_id(precinct_id)
         precinct.CONGDIST = district_id
+
+        # Update district.rep_cnt and district.dem_cnt
+        new_district.rep_cnt += len(precinct.reps)
+        new_district.dem_cnt += len(precinct.dems)
+        new_district.num_people += precinct.num_people
+        old_district.rep_cnt -= len(precinct.reps)
+        old_district.dem_cnt -= len(precinct.dems)
+        old_district.num_people -= precinct.num_people
 
         # Update person district_id attribute
         for rep in precinct.reps:
