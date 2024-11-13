@@ -1,7 +1,8 @@
-import mesa_geo as mg
-import mesa
 from ..agents.person import PersonAgent
 from ..agents.geo_unit import GeoAgent
+
+import mesa_geo as mg
+import mesa
 
 import geopandas as gpd
 import os
@@ -25,47 +26,50 @@ def check_crs_consistency(model):
 def setup_datacollector(model):
     # Set up statistics the data collector
     model.unhappy = 0
-    model.unhappy_red = 0
-    model.unhappy_blue = 0
+    model.unhappy_rep = 0
+    model.unhappy_dem = 0
     model.happy = 0
-    model.happy_blue = 0
-    model.happy_red = 0
+    model.happy_dem = 0
+    model.happy_rep = 0
     model.total_moves = 0
     
-    model.red_congdist_seats = 0
-    model.blue_congdist_seats = 0
+    model.rep_congdist_seats = 0
+    model.dem_congdist_seats = 0
     model.tied_congdist_seats = 0
 
-    model.red_state_house_seats = 0
-    model.blue_state_house_seats = 0
-    model.tied_state_house_seats = 0
-    model.red_state_senate_seats = 0
-    model.blue_state_senate_seats = 0
-    model.tied_state_senate_seats = 0
+    model.rep_legdist_seats = 0
+    model.dem_legdist_seats = 0
+    model.tied_legdist_seats = 0
+
+    model.rep_sendist_seats = 0
+    model.dem_sendist_seats = 0
+    model.tied_sendist_seats = 0
+
     model.efficiency_gap = 0
     model.mean_median = 0
     model.declination = 0
+
     model.projected_winner = None
     model.projected_margin = 0
-    model.variance = 0 # TODO: create variance statistic for population distribution across electoral districts (to check if map valid)
-    model.change_map = 0 # TODO: create statistic for change in map square kilometers (energy)
+    model.variance = 0
+    model.change_map = 0
     model.datacollector = mesa.DataCollector(
         {'unhappy': 'unhappy', 
-        'unhappy_red': 'unhappy_red',
-        'unhappy_blue': 'unhappy_blue',
+        'unhappy_rep': 'unhappy_rep',
+        'unhappy_dem': 'unhappy_dem',
         'happy': 'happy',
-        'happy_red': 'happy_red',
-        'happy_blue': 'happy_blue',
-        'red_congressional_seats': 'red_congressional_seats',
-        'blue_congressional_seats': 'blue_congressional_seats',
-        'tied_congressional_seats': 'tied_congressional_seats',
+        'happy_rep': 'happy_rep',
+        'happy_dem': 'happy_dem',
+        'rep_congdist_seats': 'rep_congdist_seats',
+        'dem_congdist_seats': 'dem_congdist_seats',
+        'tied_congdist_seats': 'tied_congdist_seats',
         'variance': 'variance',
-        'red_state_house_seats': 'red_state_house_seats',
-        'blue_state_house_seats': 'blue_state_house_seats',
-        'tied_state_house_seats': 'tied_state_house_seats',
-        'red_state_senate_seats': 'red_state_senate_seats',
-        'blue_state_senate_seats': 'blue_state_senate_seats',
-        'tied_state_senate_seats': 'tied_state_senate_seats',
+        'rep_legdist_seats': 'rep_legdist_seats',
+        'dem_legdist_seats': 'dem_legdist_seats',
+        'tied_legdist_seats': 'tied_legdist_seats',
+        'rep_sendist_seats': 'rep_sendist_seats',
+        'dem_sendist_seats': 'dem_sendist_seats',
+        'tied_sendist_seats': 'tied_sendist_seats',
         'efficiency_gap': 'efficiency_gap',
         'mean_median': 'mean_median',
         'declination': 'declination',
@@ -188,7 +192,7 @@ def create_population(model):
                 county_id=model.space.precinct_county_map[random_precinct.unique_id],
                 district_id=model.space.precinct_congdist_map[random_precinct.unique_id],
             )
-            model.space.add_person_to_precinct(person, new_precinct_id=random_precinct.unique_id)
+            model.space.add_person_to_space(person, new_precinct_id=random_precinct.unique_id)
             model.schedule.add(person)
             model.population.append(person)
 
@@ -197,6 +201,8 @@ def create_population(model):
                 model.nreps += 1
             elif person.color == 'Blue':
                 model.ndems += 1
+    
+    model.space.add_agents(model.population)
 
     # Update the number of people in the model
     model.npop = len(model.population)

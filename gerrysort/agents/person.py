@@ -89,12 +89,8 @@ class PersonAgent(mg.GeoAgent):
         return utility * (1 - (self.model.distance_decay * distance))
 
     def update_utility(self):
-        '''
-        Updates the agent's utility score and checks if it is happy/unhappy.
-        '''
         self.utility = self.calculate_utility(self.precinct_id)
         self.is_unhappy = self.utility < self.model.tolarence
-        # print('Utility: ', self.utility, 'Is Rep: ', self.is_red, 'Unhappy: ', self.is_unhappy, 'Tolerance: ', self.model.tolarence)
 
     def calculate_delta_U(self, U_new, U_current):
         """
@@ -132,8 +128,8 @@ class PersonAgent(mg.GeoAgent):
         chosen_option = moving_options[chosen_key]
 
         if chosen_key != '-1':
-            self.model.space.remove_person_from_precinct(self)
-            self.model.space.add_person_to_precinct(
+            self.model.space.remove_person_from_space(self)
+            self.model.space.add_person_to_space(
                     self,
                     new_precinct_id=chosen_option['precinct_id'],
                     new_position=chosen_option['position']
@@ -141,9 +137,7 @@ class PersonAgent(mg.GeoAgent):
             self.last_moved = 0
             self.model.total_moves += 1
 
-        #     print('\t\tPotential Utilities: ', potential_utilities)
-        #     print('\t\tProbabilities: ', probabilities)
-        #     print('\t\tChosen Key: ', chosen_key)
+        self.utility = chosen_option['utility']
 
     def sort(self):
         # Create dictionary with potental moving options
@@ -161,7 +155,7 @@ class PersonAgent(mg.GeoAgent):
             # Find counties that are not at capacity and select one at random
             not_full_capacity_counties = [county for county in self.model.counties if county.num_people < county.capacity and county.unique_id != self.county_id]
             random_county = random.choice(not_full_capacity_counties)
-            # Pick a random precinct in the county and generate a new location
+            # Pick a random precinct from random county and sample a new location
             precinct = self.model.space.get_precinct_by_id(random.choice(random_county.precincts))
             new_location = precinct.random_point()
             # Calculate discounted utility

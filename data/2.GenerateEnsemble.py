@@ -24,7 +24,7 @@ input_file = os.path.join('processed_states', f'{state}_counties_MODEL_TEST.geoj
 pop_col = 'TOTPOP'; dist_col = 'CONGDIST'
 
 # Set output file
-output_file = os.path.join('processed_states', f'{state}_CONGDIST_ensemble_MODEL_TEST.geojson')
+output_file = os.path.join('processed_states', state, f'{state}_CONGDIST_ensemble_MODEL_TEST.geojson')
 
 # Set ensemble and batch size 
 n = 50

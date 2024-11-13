@@ -7,7 +7,7 @@ from ..model import GerrySort
 
 class ModelParamsElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Sorting: {model.sorting} | Gerrymandering: {model.gerrymandering} | Number of Agents: {model.npop} | Tolarence: {model.tolarence} | Beta: {model.beta} | Capacity Multiplier: {model.capacity_mul} | Number of Proposed Maps: {model.n_proposed_maps} | Number of Moving Options: {model.n_moving_options} | Moving Cooldown: {model.moving_cooldown}"
+        return f"Sorting: {model.sorting} | Gerrymandering: {model.gerrymandering} | Number of Agents: {model.npop} | Tolarence: {model.tolarence} | Beta: {model.beta} | Capacity Multiplier: {model.capacity_mul} | Number of Proposed Maps: {model.ensemble_size} | Number of Moving Options: {model.n_moving_options} | Moving Cooldown: {model.moving_cooldown}"
 
 class DemographicsElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -19,15 +19,15 @@ class HappinessElement(mesa.visualization.TextElement):
     
 class CongressionalElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Projected Congressional Seats: D: {model.blue_congdist_seats} | R: {model.red_congdist_seats} | T: {model.tied_congdist_seats} (Change Map: {model.change_map})"
+        return f"Projected Congressional Seats: D: {model.dem_congdist_seats} | R: {model.rep_congdist_seats} | T: {model.tied_congdist_seats} (Change Map: {model.change_map})"
     
 class StateHouseElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Projected State House Seats: D: {model.blue_state_house_seats} | R: {model.red_state_house_seats} | T: {model.tied_state_house_seats}"
+        return f"Projected State House Seats: D: {model.dem_legdist_seats} | R: {model.rep_legdist_seats} | T: {model.tied_legdist_seats}"
     
 class StateSenateElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Projected State Senate Seats: D: {model.blue_state_senate_seats} | R: {model.red_state_senate_seats} | T: {model.tied_state_senate_seats}"
+        return f"Projected State Senate Seats: D: {model.dem_sendist_seats} | R: {model.rep_sendist_seats} | T: {model.tied_sendist_seats}"
 
 class ControlElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -40,12 +40,12 @@ class MetricsElement(mesa.visualization.TextElement):
 model_params = {
     "state": mesa.visualization.Choice("State", value="MN", choices=["MN", "WI", "MI", "PA", "GA", "LA", "TX"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
-    "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", False),
+    "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
     "max_iters": mesa.visualization.Slider("Max Iterations", 10, 2, 100, 1),
     "npop": mesa.visualization.Slider("Number of Agents", 5800, 100, 10000, 100),
     "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.50, 0.00, 1.00, 0.05),
     "beta": mesa.visualization.Slider("Beta (Temperature)", 100.0, 0.0, 100.0, 10),
-    "n_proposed_maps": mesa.visualization.Slider("Number of Proposed Maps", 5, 5, 20, 1),
+    "ensemble_size": mesa.visualization.Slider("Number of Proposed Maps", 25, 5, 100, 1),
     "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 5, 5, 20, 1),
     "distance_decay": mesa.visualization.Slider("Distance Decay", 0.0, 0.0, 1.0, 0.1),
     "moving_cooldown": mesa.visualization.Slider("Moving Cooldown", 0, 0, 10, 1),
@@ -86,23 +86,23 @@ happy_chart = mesa.visualization.ChartModule(
 )
 congressional_seat_share_chart = mesa.visualization.ChartModule(
     [
-        {"Label": "red_congdist_seats", "Color": "Red"},
-        {"Label": "blue_congdist_seats", "Color": "Blue"},
+        {"Label": "rep_congdist_seats", "Color": "Red"},
+        {"Label": "dem_congdist_seats", "Color": "Blue"},
         {"Label": "tied_congdist_seats", "Color": "Grey"},
     ]
 )
 state_house_seat_share_chart = mesa.visualization.ChartModule(
     [
-        {"Label": "red_state_house_seats", "Color": "Red"},
-        {"Label": "blue_state_house_seats", "Color": "Blue"},
-        {"Label": "tied_state_house_seats", "Color": "Grey"},
+        {"Label": "rep_legdist_seats", "Color": "Red"},
+        {"Label": "dem_legdist_seats", "Color": "Blue"},
+        {"Label": "tied_legdist_seats", "Color": "Grey"},
     ]
 )
 state_senate_seat_share_chart = mesa.visualization.ChartModule(
     [
-        {"Label": "red_state_senate_seats", "Color": "Red"},
-        {"Label": "blue_state_senate_seats", "Color": "Blue"},
-        {"Label": "tied_state_senate_seats", "Color": "Grey"},
+        {"Label": "rep_sendist_seats", "Color": "Red"},
+        {"Label": "dem_sendist_seats", "Color": "Blue"},
+        {"Label": "tied_sendist_seats", "Color": "Grey"},
     ]
 )
 metrics_chart = mesa.visualization.ChartModule(

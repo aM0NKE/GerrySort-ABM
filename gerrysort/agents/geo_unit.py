@@ -30,7 +30,6 @@ class GeoAgent(mg.GeoAgent):
         if self.type == 'congressional':
             self.rep_cnt = 0
             self.dem_cnt = 0
-            self.num_people = 0
             self.precincts = []
             self.color = 'Grey'
 
@@ -47,14 +46,14 @@ class GeoAgent(mg.GeoAgent):
 
     def update_majority(self):
         if self.type == 'precinct':
-            red_cnt = len(self.reps)
-            blue_cnt = len(self.dems)
+            rep_cnt = len(self.reps)
+            dem_cnt = len(self.dems)
         else:
-            red_cnt = self.rep_cnt
-            blue_cnt = self.dem_cnt
-        if red_cnt > blue_cnt:
+            rep_cnt = self.rep_cnt
+            dem_cnt = self.dem_cnt
+        if rep_cnt > dem_cnt:
             self.color = 'Red'
-        elif red_cnt < blue_cnt:
+        elif rep_cnt < dem_cnt:
             self.color = 'Blue'
         else:
             self.color = 'Grey'
@@ -63,29 +62,35 @@ class GeoAgent(mg.GeoAgent):
         '''
         Returns the wasted votes in a geographical unit for the Dem and Rep party.
         '''
-        red_wasted_votes = 0
-        blue_wasted_votes = 0
+        rep_wasted_votes = 0
+        dem_wasted_votes = 0
 
-        total_votes = self.red_cnt + self.blue_cnt
+        if self.type == 'precinct':
+            total_votes = len(self.reps) + len(self.dems)
+        else:
+            total_votes = self.rep_cnt + self.dem_cnt
+
         majority_threshold = ceil(total_votes / 2)
         
         if self.color == 'Red':
-            red_wasted_votes = self.red_cnt - majority_threshold
-            blue_wasted_votes = self.blue_cnt
+            rep_wasted_votes = self.rep_cnt - majority_threshold
+            dem_wasted_votes = self.dem_cnt
         elif self.color == 'Blue':
-            red_wasted_votes = self.red_cnt
-            blue_wasted_votes = self.blue_cnt - majority_threshold
+            rep_wasted_votes = self.rep_cnt
+            dem_wasted_votes = self.dem_cnt - majority_threshold
         else:
-            red_wasted_votes = 0
-            blue_wasted_votes = 0
+            rep_wasted_votes = 0
+            dem_wasted_votes = 0
         
-        return red_wasted_votes, blue_wasted_votes
+        return rep_wasted_votes, dem_wasted_votes
     
     def update_geometry(self, new_geometry):
-        '''
-        Updates the geometry of a geographical unit.
-        '''
-        if isinstance(new_geometry, Polygon):
-            new_geometry = MultiPolygon([new_geometry])
+        # Print type for debugging
+        # print('NEW new geometry type:', type(new_geometry))
+        old_geometry = self.geometry
+        # check if old geometry is same as new geometry
+        if old_geometry == new_geometry:
+            print('Old and new geometries are the same')
+        else:
+            print('Old and new geometries are different')
         self.geometry = new_geometry
-
