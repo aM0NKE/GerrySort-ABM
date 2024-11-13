@@ -7,8 +7,9 @@ import mesa
 
 class GerrySort(mesa.Model):
     def __init__(self, state='MN', data=None, max_iters=5, 
-                 npop=1000, gerrymandering=True, sorting=True, 
-                 tolarence=0.5, beta=0.0, ensemble_size=5, 
+                 npop=1000, sorting=True, gerrymandering=True, 
+                 initial_control='Data', tolarence=0.5, 
+                 beta=0.0, ensemble_size=5, epsilon=0.1,
                  n_moving_options=5, moving_cooldown=5, 
                  distance_decay=0.5, capacity_mul=1.0):
         # Set up the scheduler and space
@@ -25,6 +26,7 @@ class GerrySort(mesa.Model):
         self.tolarence = tolarence
         self.capacity_mul = capacity_mul
         self.ensemble_size = ensemble_size
+        self.epsilon = epsilon
         self.beta = beta
         self.n_moving_options = n_moving_options
         self.moving_cooldown = moving_cooldown
@@ -52,7 +54,10 @@ class GerrySort(mesa.Model):
         # Update statistics
         self.update_statistics()
         # Ininitialize party controlling the state based on initial plan
-        self.control = self.projected_winner 
+        if initial_control == 'Data':
+            self.control = self.projected_winner
+        else:
+            self.control = initial_control
         # Setup datacollector and collect data
         self.datacollector.collect(self)
         # Print statistics
@@ -119,8 +124,6 @@ class GerrySort(mesa.Model):
 
     def step(self):
         print(f'Model step {self.iter}...')
-        # The new control is the projected winner from the previous iteration
-        self.control = self.projected_winner
         # Sort agents
         if self.sorting:
             self.self_sort()
@@ -144,6 +147,8 @@ class GerrySort(mesa.Model):
             print('Model converged! (t={})'.format(self.iter))
             print('------------------------------------')
         else:
+            # The party in control is the projected winner
+            self.control = self.projected_winner
             self.iter += 1
             print('Model advanced!')
             print('------------------------------------')

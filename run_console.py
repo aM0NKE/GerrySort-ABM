@@ -21,7 +21,7 @@ distance_decay=0.0      # 0.0 means that distance will not affect utility of mov
 capacity_mul=1.0
 
 # Open the data
-data = gpd.read_file(os.path.join('gerrysort_data/MN/MN_precincts_election_results_2020.geojson'))
+data = gpd.read_file(os.path.join('gerrysort/data/MN/MN_precincts_election_results_2020.geojson'))
 
 for i in range(trials):
     print(f'EXPERIMENT {i + 1}/{trials} STARTED...')

@@ -57,7 +57,7 @@ def setup_gerrychain(model):
         recom,
         pop_col='TOTPOP',
         pop_target=model.ideal_population,
-        epsilon=0.1,
+        epsilon=model.epsilon,
         node_repeats=100,
         method = partial(
             bipartition_tree,
