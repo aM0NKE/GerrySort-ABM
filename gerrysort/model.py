@@ -140,8 +140,9 @@ class GerrySort(mesa.Model):
         # Print statistics
         self.print_statistics()
         if self.iter >= self.max_iters:
-            print('Model converged! (t={})'.format(self.iter))
             self.running = False
+            print('Model converged! (t={})'.format(self.iter))
+            print('------------------------------------')
         else:
             self.iter += 1
             print('Model advanced!')

@@ -13,7 +13,7 @@ import uuid
 def load_data(model, state, data):
     model.state = state
     if data is None:
-        data = gpd.read_file(os.path.join('data/processed_states', state, state + '_precincts_election_results_2020.geojson'))
+        data = gpd.read_file(os.path.join('gerrysort_data', state, state + '_precincts_election_results_2020.geojson'))
     model.data = data.to_crs(model.space.crs)
     assert model.data.crs == model.space.crs, f'CRS mismatch: data=({model.precincts.crs}); space=({model.fitness_landscape.crs})'
 
