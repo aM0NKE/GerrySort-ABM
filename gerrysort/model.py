@@ -6,7 +6,7 @@ from .utils.redistricting import *
 import mesa
 
 class GerrySort(mesa.Model):
-    def __init__(self, state='MN', data=None, max_iters=5, 
+    def __init__(self, state='MN', level='CONGDIST', data=None, max_iters=5, 
                  npop=5800, sorting=True, gerrymandering=True, 
                  initial_control='Data', tolarence=0.5, 
                  beta=0.0, ensemble_size=5, epsilon=0.1,
@@ -15,6 +15,7 @@ class GerrySort(mesa.Model):
         # Set up the scheduler and space
         self.schedule = mesa.time.BaseScheduler(self) # TODO: Look into other schedulers
         self.space = ElectoralDistricts()
+        self.space.level = level
         # Set model running conditions
         self.running = True
         self.iter = 1

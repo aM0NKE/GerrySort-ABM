@@ -38,9 +38,10 @@ class MetricsElement(mesa.visualization.TextElement):
         return f"EG: {model.efficiency_gap:.2f} | M-M: {model.mean_median:.2f} | Dec: {model.declination:.2f}"
     
 model_params = {
+    "level": mesa.visualization.Choice("Visualization Level", value="CONGDIST", choices=["PRECINCT", "COUNTY", "LEGDIST", "SENDIST", "CONGDIST"]),
     "state": mesa.visualization.Choice("State", value="MN", choices=["MN"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
-    "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
+    "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", False),
     "initial_control": mesa.visualization.Choice("Initial Control", value="Data", choices=["Data", "Democratic", "Republican", "Tied"]),
     "max_iters": mesa.visualization.Slider("Max Iterations", 10, 2, 100, 1),
     "npop": mesa.visualization.Slider("Number of Agents", 5800, 100, 10000, 100),
