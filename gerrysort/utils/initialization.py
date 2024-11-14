@@ -172,9 +172,16 @@ def create_population(model):
         county.capacity = ceil((county.CAPACITY / county.TOTPOP) * pop_county * model.capacity_mul)
         model.total_cap += county.capacity
         # print(f'County {county.unique_id} has {pop_county} people and {county.capacity} capacity')
+        # Make dictionary of PRECINT_ID:USPRSTOTAL for each precinct in the county
+        precincts = {precinct: model.space.get_precinct_by_id(precinct).USPRSTOTAL for precinct in county.precincts}
+        # Make a probability distribution of precincts based on population
+        precinct_probs = {precinct: precincts[precinct] / sum(precincts.values()) for precinct in precincts}
+        # Determine ratio of Republicans to Democrats in the county
         rep_v_dem_ratio = county.USPRSR / (county.USPRSDFL + county.USPRSR)
         for _ in range(pop_county):
-            random_precinct = model.space.get_precinct_by_id(random.choice(county.precincts))
+            # Select precinct based on population distribution
+            random_precinct_id = random.choices(list(precinct_probs.keys()), weights=list(precinct_probs.values()))[0]
+            random_precinct = model.space.get_precinct_by_id(random_precinct_id)
             person = PersonAgent(
                 unique_id=uuid.uuid4().int,
                 model=model,
