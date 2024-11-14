@@ -43,18 +43,21 @@ class PersonAgent(mg.GeoAgent):
             X1 = 1
         else:
             X1 = 0.25
+        
         # County matching precinct
         county = self.model.space.get_county_by_id(precinct.COUNTYFIPS)
         if self.color == county.color:
             X2 = 1
         else:
             X2 = 0.5
+        
         # Electoral district matching precinct
         district = self.model.space.get_congdist_by_id(precinct.CONGDIST)
         if self.color == district.color:
             X3 = 1
         else:
             X3 = 0.75
+        
         # Urbanicity matching county urbanicity
         if self.color == 'Red' and county.RUCACAT == 'rural':
             X4 = 1
@@ -70,6 +73,7 @@ class PersonAgent(mg.GeoAgent):
             X4 = 0.75
         else:
             X4 = .5
+        
         # Return utility
         a1, a2, a3, a4 = alpha
         utility = A * (X1**a1 * X2**a2 * X3**a3 * X4**a4)
@@ -119,6 +123,7 @@ class PersonAgent(mg.GeoAgent):
         probabilities = self.calculate_probabilities(U_current, potential_utilities)
         chosen_key = np.random.choice(list(moving_options.keys()), p=probabilities)
         chosen_option = moving_options[chosen_key]
+        
         # Move agent to new location if chosen
         if chosen_key != '-1':
             self.model.space.remove_person_from_space(self)
@@ -131,6 +136,7 @@ class PersonAgent(mg.GeoAgent):
             self.model.total_moves += 1
         else:
             self.last_moved += 1
+        
         # Update agent's utility
         self.utility = chosen_option['utility']
 
@@ -151,25 +157,34 @@ class PersonAgent(mg.GeoAgent):
         while option_cnt < self.model.n_moving_options:
             # Find counties that are not at capacity and select one at random
             not_full_capacity_counties = [county for county in self.model.counties if county.num_people < county.capacity and county.unique_id != self.county_id]
-            random_county = random.choice(not_full_capacity_counties)
+            new_county = random.choice(not_full_capacity_counties)
+  
+            # Make dictionary of PRECINT_ID:USPRSTOTAL for each precinct in the county
+            precincts = {precinct: self.model.space.get_precinct_by_id(precinct).USPRSTOTAL for precinct in new_county.precincts}
+            # Make a probability distribution of precincts based on population
+            precinct_probs = {precinct: precincts[precinct] / sum(precincts.values()) for precinct in precincts}
             # Pick a random precinct from random county and sample a new location
-            precinct = self.model.space.get_precinct_by_id(random.choice(random_county.precincts))
-            new_location = precinct.random_point()
+            new_precinct_id = random.choices(list(precinct_probs.keys()), weights=list(precinct_probs.values()))[0]
+            new_precinct = self.model.space.get_precinct_by_id(new_precinct_id)
+            new_location = new_precinct.random_point()
+            
             # Calculate discounted utility
-            utility = self.calculate_utility(precinct.unique_id)
+            utility = self.calculate_utility(new_precinct_id)
             discounted_utility = self.calculate_discounted_utility(utility, new_location)
+            
             # Store moving options
             option_cnt += 1
             moving_options[f'{option_cnt}'] = {
                 'position': new_location,
-                'precinct_id': precinct.unique_id,
-                'county_id': random_county.unique_id,
-                'congdist_id': self.model.space.precinct_congdist_map[precinct.unique_id],
-                'legdist_id': self.model.space.precinct_legdist_map[precinct.unique_id],
-                'sendist_id': self.model.space.precinct_sendist_map[precinct.unique_id],
+                'precinct_id': new_precinct_id,
+                'county_id': new_county.unique_id,
+                'congdist_id': self.model.space.precinct_congdist_map[new_precinct_id],
+                'legdist_id': self.model.space.precinct_legdist_map[new_precinct_id],
+                'sendist_id': self.model.space.precinct_sendist_map[new_precinct_id],
                 'utility': utility,
                 'discounted_utility': discounted_utility
             }
+
         # Simulate movement
         self.simulate_movement(moving_options, self.utility)
         
