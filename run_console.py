@@ -4,7 +4,7 @@ import geopandas as gpd
 import os
 
 # Set number of experiment trials
-trials = 5
+trials = 1
 
 # Set the parameters for the model
 state = 'MN'
@@ -15,7 +15,7 @@ gerrymandering=True
 initial_control='Data'
 tolarence=0.5
 beta=100.0              # 0 means that moving decision is totally random
-ensemble_size=5
+ensemble_size=100
 epsilon=0.1
 n_moving_options=5
 moving_cooldown=0

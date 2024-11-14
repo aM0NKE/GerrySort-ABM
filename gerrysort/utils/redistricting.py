@@ -18,8 +18,8 @@ def extract_demographics_current_map(model):
     for unit in model.precincts:
         rows.append({
             'geometry': unit.geometry,
-            'NREPS': len(unit.reps),
-            'NDEMS': len(unit.dems),
+            'NREPS': unit.rep_cnt,
+            'NDEMS': unit.dem_cnt,
             'TOTPOP': unit.num_people,
             'VTDID': unit.unique_id,
             'COUNTYFIPS': unit.COUNTYFIPS,
@@ -74,7 +74,6 @@ def setup_gerrychain(model):
     )
 
 def generate_ensemble(model):
-    # Set up chain
     setup_gerrychain(model)
     # Generate ensemble of plans
     congdist_data = {}  # Dictionary to store data for each plan
@@ -151,11 +150,11 @@ def update_mapping(model, reassigned_precincts):
         precinct = model.space.get_precinct_by_id(precinct_id)
         precinct.CONGDIST = congdist_id
         # Update congdist.rep_cnt and congdist.dem_cnt
-        new_congdist.rep_cnt += len(precinct.reps)
-        new_congdist.dem_cnt += len(precinct.dems)
+        new_congdist.rep_cnt += precinct.rep_cnt
+        new_congdist.dem_cnt += precinct.dem_cnt
         new_congdist.num_people += precinct.num_people
-        old_congdist.rep_cnt -= len(precinct.reps)
-        old_congdist.dem_cnt -= len(precinct.dems)
+        old_congdist.rep_cnt -= precinct.rep_cnt
+        old_congdist.dem_cnt -= precinct.dem_cnt
         old_congdist.num_people -= precinct.num_people
         # Update person congdist_id attribute
         for rep in precinct.reps:

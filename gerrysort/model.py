@@ -48,11 +48,7 @@ class GerrySort(mesa.Model):
         # Create population
         create_population(self)
         # Update majorities
-        self.update_majorities(self.precincts)
-        self.update_majorities(self.counties)
-        self.update_majorities(self.congdists)
-        self.update_majorities(self.legdists)
-        self.update_majorities(self.sendists)
+        self.update_majorities([self.precincts, self.counties, self.congdists, self.legdists, self.sendists])
         # Update utility of all agents
         self.update_utilities()
         # Update statistics
@@ -68,18 +64,17 @@ class GerrySort(mesa.Model):
         self.print_statistics()
         print('Model initialized!')
 
-    def update_statistics(self, statistics=[unhappy_happy, 
-                                            congdist_seats,
-                                            legdist_seats, sendist_seats,
+    def update_statistics(self, statistics=[unhappy_happy, congdist_seats,
+                                            legdist_seats, sendist_seats, variance,
                                             efficiency_gap, mean_median, declination,
-                                            projected_winner, projected_margin, 
-                                            variance]):
+                                            projected_winner, projected_margin]):
         for stat in statistics:
             stat(self)
 
-    def update_majorities(self, geo_units):
-        for unit in geo_units:
-            unit.update_majority()
+    def update_majorities(self, maps):
+        for map in maps:
+            for unit in map:
+                unit.update_majority()
 
     def update_utilities(self):
         [agent.update_utility() for agent in self.population]
@@ -93,7 +88,6 @@ class GerrySort(mesa.Model):
                 agent.sort()
             else:
                 agent.last_moved += 1
-        print(f'\t{self.total_moves} agents moved.')
 
     def gerrymander(self):
         print(f'Gerrymandering in favor of {self.control}...')
@@ -131,17 +125,15 @@ class GerrySort(mesa.Model):
         # Sort agents
         if self.sorting:
             self.self_sort()
+            print(f'\t{self.total_moves} agents moved.')
         # Gerrymander
         if self.gerrymandering: 
             self.gerrymander()
             print(f'\tMap changed by {self.change_map}%')
         # Update majorities
-        self.update_majorities(self.precincts)
-        self.update_majorities(self.counties)
-        self.update_majorities(self.congdists)
-        self.update_majorities(self.legdists)
-        self.update_majorities(self.sendists)
-        # self.update_utilities() # NOTE: probably not needed
+        self.update_majorities([self.precincts, self.counties, self.congdists, self.legdists, self.sendists])
+        # Update utility of all agents
+        self.update_utilities()
         # Update statistics
         self.update_statistics()
         # Collect data

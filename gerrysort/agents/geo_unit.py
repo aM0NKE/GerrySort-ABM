@@ -17,41 +17,19 @@ class GeoAgent(mg.GeoAgent):
     def __init__(self, unique_id, model, geometry, crs, type):
         super().__init__(unique_id, model, geometry, crs)
         self.type = type
-        
+        self.num_people = 0
+        self.rep_cnt = 0
+        self.dem_cnt = 0
+        self.color = 'Grey'
+
         if self.type == 'precinct':
             self.reps = []
             self.dems = []
-            self.num_people = 0
-            self.color = 'Grey'
-
         elif self.type == 'county':
-            self.rep_cnt = 0
-            self.dem_cnt = 0
-            self.num_people = 0
             self.capacity = 0
             self.precincts = []
-            self.color = 'Grey'
-
-        elif self.type == 'state_senate':
-            self.rep_cnt = 0
-            self.dem_cnt = 0
-            self.num_people = 0
+        else:
             self.precincts = []
-            self.color = 'Grey'
-
-        elif self.type == 'state_house':
-            self.rep_cnt = 0
-            self.dem_cnt = 0
-            self.num_people = 0
-            self.precincts = []
-            self.color = 'Grey'
-
-        elif self.type == 'congressional':
-            self.rep_cnt = 0
-            self.dem_cnt = 0
-            self.num_people = 0
-            self.precincts = []
-            self.color = 'Grey'
 
     def random_point(self):
         min_x, min_y, max_x, max_y = self.geometry.bounds
@@ -63,16 +41,9 @@ class GeoAgent(mg.GeoAgent):
         return random_point
 
     def update_majority(self):
-        if self.type == 'precinct':
-            rep_cnt = len(self.reps)
-            dem_cnt = len(self.dems)
-        else:
-            rep_cnt = self.rep_cnt
-            dem_cnt = self.dem_cnt
-
-        if rep_cnt > dem_cnt:
+        if self.rep_cnt > self.dem_cnt:
             self.color = 'Red'
-        elif rep_cnt < dem_cnt:
+        elif self.dem_cnt > self.rep_cnt:
             self.color = 'Blue'
         else:
             self.color = 'Grey'
@@ -81,13 +52,8 @@ class GeoAgent(mg.GeoAgent):
         rep_wasted_votes = 0
         dem_wasted_votes = 0
 
-        if self.type == 'precinct':
-            total_votes = len(self.reps) + len(self.dems)
-        else:
-            total_votes = self.rep_cnt + self.dem_cnt
-
+        total_votes = self.rep_cnt + self.dem_cnt
         majority_threshold = ceil(total_votes / 2)
-        
         if self.color == 'Red':
             rep_wasted_votes = self.rep_cnt - majority_threshold
             dem_wasted_votes = self.dem_cnt

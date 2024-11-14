@@ -87,8 +87,10 @@ class ElectoralDistricts(mg.GeoSpace):
         precinct.num_people += 1
         if person.color == 'Red':
             precinct.reps.append(person.unique_id)
+            precinct.rep_cnt += 1
         elif person.color == 'Blue':
             precinct.dems.append(person.unique_id)
+            precinct.dem_cnt += 1
         # Update county attributes
         new_county_id = self.precinct_county_map[new_precinct_id]
         county = self.get_county_by_id(new_county_id)
@@ -134,8 +136,10 @@ class ElectoralDistricts(mg.GeoSpace):
         precinct.num_people -= 1
         if person.color == 'Red':
             precinct.reps.remove(person.unique_id)
+            precinct.rep_cnt -= 1
         elif person.color == 'Blue':
             precinct.dems.remove(person.unique_id)
+            precinct.dem_cnt -= 1
         # Update county attributes
         county = self.get_county_by_id(person.county_id)
         county.num_people -= 1
