@@ -75,11 +75,9 @@ def setup_datacollector(model):
 
 def create_precincts(model):
     # Select relevant columns
-    precinct_data = model.data[['VTDID', 'PCTNAME', 'PCTCODE', 
-                                'COUNTYNAME', 'COUNTYCODE', 'COUNTYFIPS', 
+    precinct_data = model.data[['VTDID', 'COUNTYNAME', 'COUNTYFIPS', 
                                 'CONGDIST', 'MNSENDIST', 'MNLEGDIST',
-                                'USPRSR', 'USPRSDFL', 'USPRSTOTAL',
-                                'Shape_Leng', 'Shape_Area', 'geometry']]
+                                'USPRSR', 'USPRSDFL', 'USPRSTOTAL', 'geometry']]
     
     # Create precinct agents and add to the model
     ac_precincts = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'precinct'})
@@ -90,35 +88,23 @@ def create_precincts(model):
 
 def create_counties(model):
     # Select relevant columns
-    county_data = model.data[['COUNTYNAME', 'COUNTYCODE', 'COUNTYFIPS', 
+    county_data = model.data[['COUNTYNAME', 'COUNTYFIPS', 
                             'USPRSR', 'USPRSDFL', 'USPRSTOTAL',
-                            'RUCA', 'RUCA2', 'RUCACAT', 'HOUSEHOLDS', 
-                            'HOUSING_UNITS', 'PERSONS_PER_HOUSEHOLD', 
-                            'TOTPOP', 'TOTPOP_SHR', 'CAPACITY', 'CAPACITY_SHR', 
-                            'POPDENS', 'REL_POPDENS', 'Shape_Leng', 'Shape_Area',
-                            'geometry']]
+                            'RUCACAT', 'HOUSEHOLDS', 'HOUSING_UNITS', 
+                            'TOTPOP', 'TOTPOP_SHR', 'CAPACITY', 'geometry']]
     
     # Aggregate data by county
     agg_funcs = {
-        'COUNTYCODE': 'first',
         'COUNTYFIPS': 'first',
         'USPRSR': 'sum',
         'USPRSDFL': 'sum',
         'USPRSTOTAL': 'sum',
-        'RUCA': 'first',
-        'RUCA2': 'first',
         'RUCACAT': 'first',
         'HOUSEHOLDS': 'first',
         'HOUSING_UNITS': 'first',
-        'PERSONS_PER_HOUSEHOLD': 'first',
         'TOTPOP': 'first',
         'TOTPOP_SHR': 'first',
         'CAPACITY': 'first',
-        'CAPACITY_SHR': 'first',
-        'POPDENS': 'first',
-        'REL_POPDENS': 'first',
-        'Shape_Leng': 'sum',
-        'Shape_Area': 'sum',
     }
     county_data = county_data.dissolve(by='COUNTYNAME', aggfunc=agg_funcs).reset_index()
    
@@ -131,8 +117,7 @@ def create_counties(model):
 
 def create_state_legislatures(model):
     # Add state house districts
-    legdist_data = model.data[['MNLEGDIST', 'USPRSR', 'USPRSDFL', 'USPRSTOTAL',
-                            'Shape_Leng', 'Shape_Area', 'geometry']]
+    legdist_data = model.data[['MNLEGDIST', 'USPRSR', 'USPRSDFL', 'USPRSTOTAL', 'geometry']]
     legdist_data = legdist_data.dissolve(by='MNLEGDIST', aggfunc='sum').reset_index()
     ac_legdist = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'state_house'})
     model.legdists = ac_legdist.from_GeoDataFrame(legdist_data, unique_id='MNLEGDIST')
@@ -141,8 +126,7 @@ def create_state_legislatures(model):
     print(f'Number of state legislative districts added: {model.num_legdists}')
     
     # Add state senate districts
-    sendist_data = model.data[['MNSENDIST', 'USPRSR', 'USPRSDFL', 'USPRSTOTAL',
-                            'Shape_Leng', 'Shape_Area', 'geometry']]
+    sendist_data = model.data[['MNSENDIST', 'USPRSR', 'USPRSDFL', 'USPRSTOTAL', 'geometry']]
     sendist_data = sendist_data.dissolve(by='MNSENDIST', aggfunc='sum').reset_index()
     ac_sendist = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'state_senate'})
     model.sendists = ac_sendist.from_GeoDataFrame(sendist_data, unique_id='MNSENDIST')
@@ -152,8 +136,7 @@ def create_state_legislatures(model):
 
 def create_congressional_districts(model):
     # Select relevant columns and aggregate data by congressional district
-    congdist_data = model.data[['CONGDIST', 'USPRSR', 'USPRSDFL', 'USPRSTOTAL',
-                              'Shape_Leng', 'Shape_Area', 'geometry']]
+    congdist_data = model.data[['CONGDIST', 'USPRSR', 'USPRSDFL', 'USPRSTOTAL', 'geometry']]
     congdist_data = congdist_data.dissolve(by='CONGDIST', aggfunc='sum').reset_index()
     
     # Create congressional district agents and add to the model

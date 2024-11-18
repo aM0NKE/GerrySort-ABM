@@ -59,36 +59,42 @@ def sendist_seats(model):
             model.tied_sendist_seats += 1
 
 def projected_winner(model):
-    if model.rep_legdist_seats > model.dem_legdist_seats:
-        if model.rep_sendist_seats > model.dem_sendist_seats:
+    if model.control_rule == 'STATELEG':
+        if model.rep_legdist_seats > model.dem_legdist_seats:
+            if model.rep_sendist_seats > model.dem_sendist_seats:
+                model.projected_winner = 'Republican'
+        elif model.dem_legdist_seats > model.rep_legdist_seats:
+            if model.dem_sendist_seats > model.rep_sendist_seats:
+                model.projected_winner = 'Democratic'
+        else:
+            model.projected_winner = 'Tied'
+    
+    elif model.control_rule == 'CONGDIST':
+        # NOTE: Alternative option (only considers the US House)
+        if model.rep_congdist_seats > model.dem_congdist_seats:
             model.projected_winner = 'Republican'
-    elif model.dem_legdist_seats > model.rep_legdist_seats:
-        if model.dem_sendist_seats > model.rep_sendist_seats:
+        elif model.rep_congdist_seats < model.dem_congdist_seats:
             model.projected_winner = 'Democratic'
-    else:
-        model.projected_winner = 'Tied'
-    # NOTE: Alternative option (only considers the US House)
-    # if model.rep_congdist_seats > model.dem_congdist_seats:
-    #     model.projected_winner = 'Republican'
-    # elif model.rep_congdist_seats < model.dem_congdist_seats:
-    #     model.projected_winner = 'Democratic'
-    # else:
-    #     model.projected_winner = 'Tied'
+        else:
+            model.projected_winner = 'Tied'
     
 def projected_margin(model):
-    if model.projected_winner == 'Republican':
-        model.projected_margin = (model.rep_legdist_seats - model.dem_legdist_seats) + (model.rep_sendist_seats - model.dem_sendist_seats)
-    elif model.projected_winner == 'Democratic':
-        model.projected_margin = (model.dem_legdist_seats - model.rep_legdist_seats) + (model.dem_sendist_seats - model.rep_sendist_seats)
-    else:
-        model.projected_margin = 0
-    # NOTE: Alternative option (only considers the US House)
-    # if model.projected_winner == 'Republican':
-    #     model.projected_margin = model.rep_congdist_seats - model.dem_congdist_seats
-    # elif model.projected_winner == 'Democratic':
-    #     model.projected_margin = model.dem_congdist_seats - model.rep_congdist_seats
-    # else:
-    #     model.projected_margin = 0
+    if model.control_rule == 'STATELEG':
+        if model.projected_winner == 'Republican':
+            model.projected_margin = (model.rep_legdist_seats - model.dem_legdist_seats) + (model.rep_sendist_seats - model.dem_sendist_seats)
+        elif model.projected_winner == 'Democratic':
+            model.projected_margin = (model.dem_legdist_seats - model.rep_legdist_seats) + (model.dem_sendist_seats - model.rep_sendist_seats)
+        else:
+            model.projected_margin = 0
+
+    elif model.control_rule == 'CONGDIST':
+        # NOTE: Alternative option (only considers the US House)
+        if model.projected_winner == 'Republican':
+            model.projected_margin = model.rep_congdist_seats - model.dem_congdist_seats
+        elif model.projected_winner == 'Democratic':
+            model.projected_margin = model.dem_congdist_seats - model.rep_congdist_seats
+        else:
+            model.projected_margin = 0
 
 def variance(model):
     population_cnts = [district.num_people for district in model.congdists]

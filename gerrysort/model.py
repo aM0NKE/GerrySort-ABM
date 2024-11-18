@@ -8,7 +8,7 @@ import mesa
 class GerrySort(mesa.Model):
     def __init__(self, state='MN', level='CONGDIST', data=None, max_iters=5, 
                  npop=5800, sorting=True, gerrymandering=True, 
-                 initial_control='Data', tolarence=0.5, 
+                 control_rule='CONGDIST', initial_control='Data', tolarence=0.5, 
                  beta=0.0, ensemble_size=5, epsilon=0.1,
                  n_moving_options=5, moving_cooldown=0, 
                  distance_decay=0.0, capacity_mul=1.0):
@@ -24,6 +24,7 @@ class GerrySort(mesa.Model):
         self.npop = npop
         self.sorting = sorting
         self.gerrymandering = gerrymandering
+        self.control_rule = control_rule
         self.tolarence = tolarence
         self.beta = beta
         self.ensemble_size = ensemble_size
