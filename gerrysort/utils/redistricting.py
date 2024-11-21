@@ -22,7 +22,7 @@ def extract_demographics_current_map(model):
             'NDEMS': unit.dem_cnt,
             'TOTPOP': unit.num_people,
             'VTDID': unit.unique_id,
-            'COUNTYFIPS': unit.COUNTYFIPS,
+            'COUNTYFIPS': unit.COUNTY_FIPS,
             'CONGDIST': unit.CONGDIST,
             'area': unit.geometry.area,
         })
@@ -65,9 +65,13 @@ def setup_gerrychain(model):
             allow_pair_reselection=True
         )
     )
+    if model.state in ['MN']:
+        state_constraints = [contiguous]
+    elif model.state in ['WI']:
+        state_constraints = []
     model.recom_chain = MarkovChain(
         proposal=model.proposal,
-        constraints=[contiguous],
+        constraints=state_constraints,
         accept=accept.always_accept,
         initial_state=model.initial_partition,
         total_steps=model.ensemble_size,
@@ -93,6 +97,7 @@ def generate_ensemble(model):
     return plans_list, congdist_data
 
 def find_best_plan(model, congdist_data):
+    model_dems_frac = model.ndems / (model.ndems + model.nreps)
     eval_results = {}
     # Evaluate each plan
     for plan in congdist_data.keys():
@@ -104,16 +109,30 @@ def find_best_plan(model, congdist_data):
             elif congdist_data[plan][congdist]['nreps'] < congdist_data[plan][congdist]['ndems']:
                 dem_seats += 1
         eval_results[plan] = {
-            'red_congressional_seats': rep_seats,
-            'blue_congressional_seats': dem_seats,
+            'rep_congressional_seats': rep_seats,
+            'dem_congressional_seats': dem_seats,
+            'dem_seatshare': dem_seats / (dem_seats + rep_seats),
+            'rep_seatshare': rep_seats / (dem_seats + rep_seats),
         }
+        # Score the plans based on control
+        e = random.gauss(0, model.sigma)
+        # NOTE: Add noise to fractions or total seats?
+        print(f'Dem seatshare: {dem_seats / (dem_seats + rep_seats)}, Rep seatshare: {rep_seats / (dem_seats + rep_seats)}, Noise: {e}')
+        if model.control == 'Republican':
+            eval_results[plan]['partisan_utility'] = eval_results[plan]['rep_seatshare'] + e
+        elif model.control == 'Democratic':
+            eval_results[plan]['partisan_utility'] = eval_results[plan]['dem_seatshare'] + e
+        # Evaluate fairness of each plan
+        eval_results[plan]['fairness_score'] = abs(eval_results[plan]['dem_seatshare'] - model_dems_frac) + e # NOTE: Noise on fair map?
+
     # Find best plan based on control
     if model.control == 'Republican':
-        best_plan = max(eval_results, key=lambda x: eval_results[x]['red_congressional_seats'])
+        best_plan = max(eval_results, key=lambda x: eval_results[x]['partisan_utility'])
     elif model.control == 'Democratic':
-        best_plan = max(eval_results, key=lambda x: eval_results[x]['blue_congressional_seats'])
+        best_plan = max(eval_results, key=lambda x: eval_results[x]['partisan_utility'])
+    # In case of tie, pick a fair map (closest to actual fraction dems/reps)
     elif model.control == 'Tied':
-        best_plan = f'plan_{random.randint(0, model.ensemble_size - 1)}'
+        best_plan = min(eval_results, key=lambda x: eval_results[x]['fairness_score'])
     return best_plan
         
 def redistrict(model, plans_list, best_plan):

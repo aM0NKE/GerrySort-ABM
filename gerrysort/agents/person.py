@@ -45,7 +45,7 @@ class PersonAgent(mg.GeoAgent):
             X1 = 0.25
         
         # County matching precinct
-        county = self.model.space.get_county_by_id(precinct.COUNTYFIPS)
+        county = self.model.space.get_county_by_id(precinct.COUNTY_NAME)
         if self.color == county.color:
             X2 = 1
         else:
@@ -59,17 +59,17 @@ class PersonAgent(mg.GeoAgent):
             X3 = 0.75
         
         # Urbanicity matching county urbanicity
-        if self.color == 'Red' and county.RUCACAT == 'rural':
+        if self.color == 'Red' and county.COUNTY_RUCACAT == 'rural':
             X4 = 1
-        elif self.color == 'Red' and county.RUCACAT == 'small_town':
+        elif self.color == 'Red' and county.COUNTY_RUCACAT == 'small_town':
             X4 = 1
-        elif self.color == 'Red' and county.RUCACAT == 'large_town':
+        elif self.color == 'Red' and county.COUNTY_RUCACAT == 'large_town':
             X4 = 0.75
-        elif self.color == 'Blue' and county.RUCACAT == 'urban':
+        elif self.color == 'Blue' and county.COUNTY_RUCACAT == 'urban':
             X4 = 1
-        elif self.color == 'Blue' and county.RUCACAT == 'large_town':
+        elif self.color == 'Blue' and county.COUNTY_RUCACAT == 'large_town':
             X4 = 1
-        elif self.color == 'Blue' and county.RUCACAT == 'small_town':
+        elif self.color == 'Blue' and county.COUNTY_RUCACAT == 'small_town':
             X4 = 0.75
         else:
             X4 = .5
@@ -80,7 +80,7 @@ class PersonAgent(mg.GeoAgent):
         return utility
     
     def calculate_discounted_utility(self, utility, new_location):
-        max_dist_dict = {'MN': 475}
+        max_dist_dict = {'MN': 475, 'WI': 360}
         max_dist = max_dist_dict[self.model.state]
         distance = great_circle((self.geometry.y, self.geometry.x), (new_location.y, new_location.x)).miles / max_dist
         return utility * (1 - (self.model.distance_decay * distance))
@@ -158,9 +158,10 @@ class PersonAgent(mg.GeoAgent):
             # Find counties that are not at capacity and select one at random
             not_full_capacity_counties = [county for county in self.model.counties if county.num_people < county.capacity and county.unique_id != self.county_id]
             new_county = random.choice(not_full_capacity_counties)
-  
             # Make dictionary of PRECINT_ID:USPRSTOTAL for each precinct in the county
-            precincts = {precinct: self.model.space.get_precinct_by_id(precinct).USPRSTOTAL for precinct in new_county.precincts}
+            precincts = {precinct: self.model.space.get_precinct_by_id(precinct).PRETOT20 for precinct in new_county.precincts}
+            # Set all TOTPOP values of nan to 0
+            precincts = {k: v if v == v else 0 for k, v in precincts.items()}
             # Make a probability distribution of precincts based on population
             precinct_probs = {precinct: precincts[precinct] / sum(precincts.values()) for precinct in precincts}
             # Pick a random precinct from random county and sample a new location

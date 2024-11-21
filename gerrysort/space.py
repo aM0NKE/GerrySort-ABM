@@ -62,11 +62,11 @@ class ElectoralDistricts(mg.GeoSpace):
     def create_precinct_to_county_map(self, precincts):
         for precinct in precincts:
             # Get county
-            county = self.get_county_by_id(precinct.COUNTYFIPS)
+            county = self.get_county_by_id(precinct.COUNTY_NAME)
             # Add precinct to county agent
             county.precincts.append(precinct.unique_id)
             # Add county to precinct-county map
-            self.precinct_county_map[precinct.unique_id] = precinct.COUNTYFIPS
+            self.precinct_county_map[precinct.unique_id] = precinct.COUNTY_NAME
 
     def create_precinct_to_congdist_map(self, precincts):
         for precinct in precincts:
@@ -76,15 +76,15 @@ class ElectoralDistricts(mg.GeoSpace):
 
     def create_precinct_to_legdist_map(self, precincts):
         for precinct in precincts:
-            legdist = self.get_legdist_by_id(precinct.MNLEGDIST)
+            legdist = self.get_legdist_by_id(precinct.LEGDIST)
             legdist.precincts.append(precinct.unique_id)
-            self.precinct_legdist_map[precinct.unique_id] = precinct.MNLEGDIST
+            self.precinct_legdist_map[precinct.unique_id] = precinct.LEGDIST
 
     def create_precinct_to_sendist_map(self, precincts):
         for precinct in precincts:
-            sendist = self.get_sendist_by_id(precinct.MNSENDIST)
+            sendist = self.get_sendist_by_id(precinct.SENDIST)
             sendist.precincts.append(precinct.unique_id)
-            self.precinct_sendist_map[precinct.unique_id] = precinct.MNSENDIST
+            self.precinct_sendist_map[precinct.unique_id] = precinct.SENDIST
 
     def add_person_to_space(self, person, new_precinct_id, new_position=None):
         # Update precinct attributes

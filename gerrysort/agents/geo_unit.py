@@ -28,7 +28,10 @@ class GeoAgent(mg.GeoAgent):
         elif self.type == 'county':
             self.capacity = 0
             self.precincts = []
-        else:
+        elif self.type == 'congressional':
+            self.competitive = None
+            self.precincts = []
+        else: # State house and senate districts
             self.precincts = []
 
     def random_point(self):
