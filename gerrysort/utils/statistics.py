@@ -63,11 +63,13 @@ def projected_winner(model):
         if model.rep_legdist_seats > model.dem_legdist_seats:
             if model.rep_sendist_seats > model.dem_sendist_seats:
                 model.projected_winner = 'Republican'
+            else:
+                model.projected_winner = 'Tied'
         elif model.dem_legdist_seats > model.rep_legdist_seats:
             if model.dem_sendist_seats > model.rep_sendist_seats:
                 model.projected_winner = 'Democratic'
-        else:
-            model.projected_winner = 'Tied'
+            else:
+                model.projected_winner = 'Tied'
     
     elif model.control_rule == 'CONGDIST':
         # NOTE: Alternative option (only considers the US House)
@@ -96,7 +98,7 @@ def projected_margin(model):
         else:
             model.projected_margin = 0
 
-def variance(model):
+def variance(model): # TODO: turn this into % max population deviation
     population_cnts = [district.num_people for district in model.congdists]
     mean_population = sum(population_cnts) / len(population_cnts)
     model.variance = sum((x - mean_population) ** 2 for x in population_cnts) / len(population_cnts)

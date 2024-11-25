@@ -22,7 +22,7 @@ def extract_demographics_current_map(model):
             'NDEMS': unit.dem_cnt,
             'TOTPOP': unit.num_people,
             'VTDID': unit.unique_id,
-            'COUNTYFIPS': unit.COUNTY_FIPS,
+            'COUNTYFP': unit.COUNTYFP,
             'CONGDIST': unit.CONGDIST,
             'area': unit.geometry.area,
         })
@@ -65,10 +65,10 @@ def setup_gerrychain(model):
             allow_pair_reselection=True
         )
     )
-    if model.state in ['MN']:
-        state_constraints = [contiguous]
-    elif model.state in ['WI']:
+    if model.state in ['WI']:
         state_constraints = []
+    else:
+        state_constraints = [contiguous]
     model.recom_chain = MarkovChain(
         proposal=model.proposal,
         constraints=state_constraints,

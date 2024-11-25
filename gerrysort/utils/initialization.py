@@ -14,6 +14,8 @@ def load_data(model, state, data):
     model.state = state
     if data is None:
         data = gpd.read_file(os.path.join('gerrysort/data/processed', state + '.geojson'))
+    if len(data[~data.geometry.is_valid]) != 0:
+        data['geometry'] = data.geometry.buffer(0)
     model.data = data.to_crs(model.space.crs)
     assert model.data.crs == model.space.crs, f'CRS mismatch: data=({model.precincts.crs}); space=({model.fitness_landscape.crs})'
 
@@ -84,68 +86,68 @@ def setup_datacollector(model):
 
 def create_precincts(model):
     # Select relevant columns
-    precinct_data = model.data[['VTDID', 'COUNTY_NAME', 'COUNTY_FIPS', 
-                                'CONGDIST', 'SENDIST', 'LEGDIST',
-                                'PREREP20', 'PREDEM20', 'PRETOT20', 'geometry']]
+    precinct_data = model.data[['VTDID', 'COUNTY_NAME', 'COUNTYFP',
+                                'CONGDIST', 'SENDIST', 'LEGDIST', 'TOTPOP', 
+                                'PRES20R', 'PRES20D', 'PRES20TOT', 'geometry']]
     
     # Create precinct agents and add to the model
     ac_precincts = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'precinct'})
     model.precincts = ac_precincts.from_GeoDataFrame(precinct_data, unique_id='VTDID')
     model.num_precincts = len(model.precincts)
     model.space.add_precincts(model.precincts)
-    print(f'Number of precincts added: {model.num_precincts}')
+    print(f'{model.num_precincts} precincts added.')
 
 def create_counties(model):
     # Select relevant columns
-    county_data = model.data[['COUNTY_NAME', 'COUNTY_FIPS', 
-                            'PREREP20', 'PREDEM20', 'PRETOT20',
+    county_data = model.data[['COUNTY_NAME', 'COUNTYFP', 
+                            'PRES20R', 'PRES20D', 'PRES20TOT',
                             'COUNTY_RUCACAT', 'COUNTY_HOUSEHOLDS', 'COUNTY_HOUSING_UNITS', 
-                            'COUNTY_TOTPOP', 'COUNTY_TOTPOP_SHR', 'COUNTY_CAPACITY', 'geometry']]
+                            'COUNTY_TOTPOP', 'COUNTY_TOTPOP_SHARE', 'COUNTY_CAPACITY', 'geometry']]
     
     # Aggregate data by county
     agg_funcs = {
         'COUNTY_NAME': 'first',
-        'PREREP20': 'sum',
-        'PREDEM20': 'sum',
-        'PRETOT20': 'sum',
+        'PRES20R': 'sum',
+        'PRES20D': 'sum',
+        'PRES20TOT': 'sum',
         'COUNTY_RUCACAT': 'first',
         'COUNTY_HOUSEHOLDS': 'first',
         'COUNTY_HOUSING_UNITS': 'first',
         'COUNTY_TOTPOP': 'first',
-        'COUNTY_TOTPOP_SHR': 'first',
+        'COUNTY_TOTPOP_SHARE': 'first',
         'COUNTY_CAPACITY': 'first',
     }
-    county_data = county_data.dissolve(by='COUNTY_FIPS', aggfunc=agg_funcs).reset_index()
+    county_data = county_data.dissolve(by='COUNTYFP', aggfunc=agg_funcs).reset_index()
    
    # Create county agents and add to the model
     ac_c = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'county'})
     model.counties = ac_c.from_GeoDataFrame(county_data, unique_id='COUNTY_NAME')
     model.n_counties = len(model.counties)
     model.space.add_counties(model.counties)
-    print(f'Number of counties added: {model.n_counties}')
+    print(f'{model.n_counties} counties added.')
 
 def create_state_legislatures(model):
     # Add state house districts
-    legdist_data = model.data[['LEGDIST', 'PREREP20', 'PREDEM20', 'PRETOT20', 'geometry']]
+    legdist_data = model.data[['LEGDIST', 'PRES20R', 'PRES20D', 'PRES20TOT', 'geometry']]
     legdist_data = legdist_data.dissolve(by='LEGDIST', aggfunc='sum').reset_index()
     ac_legdist = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'state_house'})
     model.legdists = ac_legdist.from_GeoDataFrame(legdist_data, unique_id='LEGDIST')
     model.num_legdists = len(model.legdists)
     model.space.add_legdists(model.legdists)
-    print(f'Number of state legislative districts added: {model.num_legdists}')
+    print(f'{model.num_legdists} state legislative districts added.')
     
     # Add state senate districts
-    sendist_data = model.data[['SENDIST', 'PREREP20', 'PREDEM20', 'PRETOT20', 'geometry']]
+    sendist_data = model.data[['SENDIST', 'PRES20R', 'PRES20D', 'PRES20TOT', 'geometry']]
     sendist_data = sendist_data.dissolve(by='SENDIST', aggfunc='sum').reset_index()
     ac_sendist = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'state_senate'})
     model.sendists = ac_sendist.from_GeoDataFrame(sendist_data, unique_id='SENDIST')
     model.num_sendists = len(model.sendists)
     model.space.add_sendists(model.sendists)
-    print(f'Number of state senate districts added: {model.num_sendists}')
+    print(f'{model.num_sendists} state senate districts added.')
 
 def create_congressional_districts(model):
     # Select relevant columns and aggregate data by congressional district
-    congdist_data = model.data[['CONGDIST', 'PREREP20', 'PREDEM20', 'PRETOT20', 'geometry']]
+    congdist_data = model.data[['CONGDIST', 'PRES20R', 'PRES20D', 'PRES20TOT', 'geometry']]
     congdist_data = congdist_data.dissolve(by='CONGDIST', aggfunc='sum').reset_index()
     
     # Create congressional district agents and add to the model
@@ -153,7 +155,7 @@ def create_congressional_districts(model):
     model.congdists = ac_congdist.from_GeoDataFrame(congdist_data, unique_id='CONGDIST')
     model.num_congdists = len(model.congdists)
     model.space.add_congdists(model.congdists)
-    print(f'Number of congressional districts added: {model.num_congdists}')
+    print(f'{model.num_congdists} congressional districts added')
 
 def create_population(model):
     # Initialize model state variables
@@ -165,19 +167,19 @@ def create_population(model):
     # Add people to the model
     for county in model.counties:
         # Determine initial number of people in the county
-        pop_county = ceil(county.COUNTY_TOTPOP_SHR * model.npop)
+        pop_county = ceil(county.COUNTY_TOTPOP_SHARE * model.npop)
         # Set county capacity (update state total capacity)
         county.capacity = ceil((county.COUNTY_CAPACITY / county.COUNTY_TOTPOP) * pop_county * model.capacity_mul)
         model.total_cap += county.capacity
         # print(f'{county.unique_id} County has {pop_county} people and {county.capacity} capacity')
         # Make dictionary of PRECINT_ID:USPRSTOTAL for each precinct in the county
-        precincts = {precinct: model.space.get_precinct_by_id(precinct).PRETOT20 for precinct in county.precincts}
+        precincts = {precinct: model.space.get_precinct_by_id(precinct).TOTPOP for precinct in county.precincts}
         # Set all TOTPOP values of nan to 0
         precincts = {k: v if v == v else 0 for k, v in precincts.items()}
         # Make a probability distribution of precincts based on population
         precinct_probs = {precinct: precincts[precinct] / sum(precincts.values()) for precinct in precincts}
         # Determine ratio of Republicans to Democrats in the county
-        rep_v_dem_ratio = county.PREREP20 / (county.PREDEM20 + county.PREREP20)
+        rep_v_dem_ratio = county.PRES20R / (county.PRES20D + county.PRES20R)
         for _ in range(pop_county):
             # Select precinct based on population distribution
             random_precinct_id = random.choices(list(precinct_probs.keys()), weights=list(precinct_probs.values()))[0]

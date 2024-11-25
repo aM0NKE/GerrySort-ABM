@@ -47,7 +47,7 @@ class GerryMetricsElement(mesa.visualization.TextElement):
     
 model_params = {
     "level": mesa.visualization.Choice("Visualization Level", value="CONGDIST", choices=["PRECINCT", "COUNTY", "LEGDIST", "SENDIST", "CONGDIST"]),
-    "state": mesa.visualization.Choice("State", value="MN", choices=["MN", "WI"]),
+    "state": mesa.visualization.Choice("State", value="MN", choices=["MN", "PA", "GA"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
     "control_rule": mesa.visualization.Choice("Control Rule", value="STATELEG", choices=["CONGDIST", "STATELEG"]),
@@ -70,7 +70,7 @@ def schelling_draw(agent):
     if isinstance(agent, GeoAgent):
         portrayal["color"] = agent.color
     elif isinstance(agent, PersonAgent):
-        portrayal["radius"] = 1
+        portrayal["radius"] = .1
         portrayal["shape"] = "circle"
         portrayal["color"] = agent.color
     return portrayal

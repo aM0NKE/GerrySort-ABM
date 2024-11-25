@@ -80,7 +80,7 @@ class PersonAgent(mg.GeoAgent):
         return utility
     
     def calculate_discounted_utility(self, utility, new_location):
-        max_dist_dict = {'MN': 475, 'WI': 360}
+        max_dist_dict = {'MN': 475, 'WI': 360, 'GA': 385, 'PA': 330, 'NC': 500}
         max_dist = max_dist_dict[self.model.state]
         distance = great_circle((self.geometry.y, self.geometry.x), (new_location.y, new_location.x)).miles / max_dist
         return utility * (1 - (self.model.distance_decay * distance))
@@ -159,7 +159,7 @@ class PersonAgent(mg.GeoAgent):
             not_full_capacity_counties = [county for county in self.model.counties if county.num_people < county.capacity and county.unique_id != self.county_id]
             new_county = random.choice(not_full_capacity_counties)
             # Make dictionary of PRECINT_ID:USPRSTOTAL for each precinct in the county
-            precincts = {precinct: self.model.space.get_precinct_by_id(precinct).PRETOT20 for precinct in new_county.precincts}
+            precincts = {precinct: self.model.space.get_precinct_by_id(precinct).TOTPOP for precinct in new_county.precincts}
             # Set all TOTPOP values of nan to 0
             precincts = {k: v if v == v else 0 for k, v in precincts.items()}
             # Make a probability distribution of precincts based on population
