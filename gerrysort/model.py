@@ -6,16 +6,17 @@ from .utils.redistricting import *
 import mesa
 
 class GerrySort(mesa.Model):
-    def __init__(self, state='MN', level='CONGDIST', data=None, max_iters=5, 
+    def __init__(self, state='MN', vis_level='CONGDIST', data=None, election='PRES20', max_iters=5, 
                  npop=5800, sorting=True, gerrymandering=True, 
-                 control_rule='CONGDIST', initial_control='Data', tolarence=0.5, 
+                 control_rule='CONGDIST', initial_control='Model', tolarence=0.5, 
                  beta=0.0, ensemble_size=5, epsilon=0.1, sigma=0.0,
                  n_moving_options=5, moving_cooldown=0, 
                  distance_decay=0.0, capacity_mul=1.0):
         # Set up the scheduler and space
         self.schedule = mesa.time.BaseScheduler(self) # TODO: Look into other schedulers
         self.space = ElectoralDistricts()
-        self.space.level = level
+        self.space.vis_level = vis_level
+        self.election = election
         # Set model running conditions
         self.running = True
         self.iter = 1
@@ -56,11 +57,17 @@ class GerrySort(mesa.Model):
         self.update_utilities()
         # Update statistics
         update_statistics(self)
-        # Ininitialize party controlling the state based on initial plan
-        if initial_control == 'Data':
-            self.control = self.projected_winner
+         # Ininitialize party controlling the state based on initial plan
+        if control_rule == 'FIXED':
+            if initial_control == 'Model':
+                self.control = self.projected_winner
+            elif initial_control in ['Democratic', 'Republican', 'Tied']:
+                self.control = initial_control
         else:
-            self.control = initial_control
+            if initial_control == 'Model':
+                self.control = self.projected_winner
+            elif initial_control in ['Democratic', 'Republican', 'Tied']:
+                self.control = initial_control
         # Setup datacollector and collect data
         self.datacollector.collect(self)
         # Print statistics
@@ -122,7 +129,8 @@ class GerrySort(mesa.Model):
             print('------------------------------------')
         else:
             # The party in control is the projected winner
-            self.control = self.projected_winner
+            if self.control_rule != 'FIXED':    
+                self.control = self.projected_winner
             self.iter += 1
             print('Model advanced!')
             print('------------------------------------')

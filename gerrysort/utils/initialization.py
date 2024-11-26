@@ -88,7 +88,7 @@ def create_precincts(model):
     # Select relevant columns
     precinct_data = model.data[['VTDID', 'COUNTY_NAME', 'COUNTYFP',
                                 'CONGDIST', 'SENDIST', 'LEGDIST', 'TOTPOP', 
-                                'PRES20R', 'PRES20D', 'PRES20TOT', 'geometry']]
+                                f'{model.election}R', f'{model.election}D', f'{model.election}TOT', 'geometry']]
     
     # Create precinct agents and add to the model
     ac_precincts = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'precinct'})
@@ -100,16 +100,16 @@ def create_precincts(model):
 def create_counties(model):
     # Select relevant columns
     county_data = model.data[['COUNTY_NAME', 'COUNTYFP', 
-                            'PRES20R', 'PRES20D', 'PRES20TOT',
+                            f'{model.election}R', f'{model.election}D', f'{model.election}TOT',
                             'COUNTY_RUCACAT', 'COUNTY_HOUSEHOLDS', 'COUNTY_HOUSING_UNITS', 
                             'COUNTY_TOTPOP', 'COUNTY_TOTPOP_SHARE', 'COUNTY_CAPACITY', 'geometry']]
     
     # Aggregate data by county
     agg_funcs = {
         'COUNTY_NAME': 'first',
-        'PRES20R': 'sum',
-        'PRES20D': 'sum',
-        'PRES20TOT': 'sum',
+        f'{model.election}R': 'sum',
+        f'{model.election}D': 'sum',
+        f'{model.election}TOT': 'sum',
         'COUNTY_RUCACAT': 'first',
         'COUNTY_HOUSEHOLDS': 'first',
         'COUNTY_HOUSING_UNITS': 'first',
@@ -128,7 +128,7 @@ def create_counties(model):
 
 def create_state_legislatures(model):
     # Add state house districts
-    legdist_data = model.data[['LEGDIST', 'PRES20R', 'PRES20D', 'PRES20TOT', 'geometry']]
+    legdist_data = model.data[['LEGDIST', f'{model.election}R', f'{model.election}D', f'{model.election}TOT', 'geometry']]
     legdist_data = legdist_data.dissolve(by='LEGDIST', aggfunc='sum').reset_index()
     ac_legdist = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'state_house'})
     model.legdists = ac_legdist.from_GeoDataFrame(legdist_data, unique_id='LEGDIST')
@@ -137,7 +137,7 @@ def create_state_legislatures(model):
     print(f'{model.num_legdists} state legislative districts added.')
     
     # Add state senate districts
-    sendist_data = model.data[['SENDIST', 'PRES20R', 'PRES20D', 'PRES20TOT', 'geometry']]
+    sendist_data = model.data[['SENDIST', f'{model.election}R', f'{model.election}D', f'{model.election}TOT', 'geometry']]
     sendist_data = sendist_data.dissolve(by='SENDIST', aggfunc='sum').reset_index()
     ac_sendist = mg.AgentCreator(GeoAgent, model=model, agent_kwargs={'type': 'state_senate'})
     model.sendists = ac_sendist.from_GeoDataFrame(sendist_data, unique_id='SENDIST')
@@ -147,7 +147,7 @@ def create_state_legislatures(model):
 
 def create_congressional_districts(model):
     # Select relevant columns and aggregate data by congressional district
-    congdist_data = model.data[['CONGDIST', 'PRES20R', 'PRES20D', 'PRES20TOT', 'geometry']]
+    congdist_data = model.data[['CONGDIST', f'{model.election}R', f'{model.election}D', f'{model.election}TOT', 'geometry']]
     congdist_data = congdist_data.dissolve(by='CONGDIST', aggfunc='sum').reset_index()
     
     # Create congressional district agents and add to the model
@@ -179,7 +179,7 @@ def create_population(model):
         # Make a probability distribution of precincts based on population
         precinct_probs = {precinct: precincts[precinct] / sum(precincts.values()) for precinct in precincts}
         # Determine ratio of Republicans to Democrats in the county
-        rep_v_dem_ratio = county.PRES20R / (county.PRES20D + county.PRES20R)
+        rep_v_dem_ratio = getattr(county, f"{model.election}R") / (getattr(county, f"{model.election}D") + getattr(county, f"{model.election}R"))
         for _ in range(pop_county):
             # Select precinct based on population distribution
             random_precinct_id = random.choices(list(precinct_probs.keys()), weights=list(precinct_probs.values()))[0]

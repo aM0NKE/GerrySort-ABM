@@ -46,12 +46,13 @@ class GerryMetricsElement(mesa.visualization.TextElement):
         return f"EG: {model.efficiency_gap:.2f} | M-M: {model.mean_median:.2f} | Dec: {model.declination:.2f}"
     
 model_params = {
-    "level": mesa.visualization.Choice("Visualization Level", value="CONGDIST", choices=["PRECINCT", "COUNTY", "LEGDIST", "SENDIST", "CONGDIST"]),
-    "state": mesa.visualization.Choice("State", value="MN", choices=["MN", "PA", "GA"]),
+    "vis_level": mesa.visualization.Choice("Visualization Level", value="CONGDIST", choices=["PRECINCT", "COUNTY", "LEGDIST", "SENDIST", "CONGDIST"]),
+    "state": mesa.visualization.Choice("State", value="MA", choices=["MA", "MN", "WI", "MI", "PA", "GA", "NC", "OH", "TX", "LA"]),
+    "election": mesa.visualization.Choice("Election", value="PRES20", choices=["PRES20", "PRES16", "PRES12"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
-    "control_rule": mesa.visualization.Choice("Control Rule", value="STATELEG", choices=["CONGDIST", "STATELEG"]),
-    "initial_control": mesa.visualization.Choice("Initial Control", value="Data", choices=["Data", "Democratic", "Republican", "Tied"]),
+    "control_rule": mesa.visualization.Choice("Control Rule", value="FIXED", choices=["CONGDIST", "STATELEG", "FIXED"]),
+    "initial_control": mesa.visualization.Choice("Initial Control", value="Republican", choices=["Model", "Democratic", "Republican", "Tied"]),
     "max_iters": mesa.visualization.Slider("Max Iterations", 10, 2, 100, 1),
     "npop": mesa.visualization.Slider("Number of Agents", 5800, 100, 10000, 100),
     "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.50, 0.00, 1.00, 0.05),

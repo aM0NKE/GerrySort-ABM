@@ -28,34 +28,34 @@ class ElectoralDistricts(mg.GeoSpace):
         self.precinct_legdist_map = {}
         self.precinct_sendist_map = {}
         self.precinct_congdist_map = {}
-        self.level = None
+        self.vis_level = None
 
     def add_agents(self, persons):
         for person in persons:
             self.id_person_map[person.unique_id] = person
 
     def add_precincts(self, precincts):
-        if self.level == 'PRECINCT': super().add_agents(precincts)
+        if self.vis_level == 'PRECINCT': super().add_agents(precincts)
         for precinct in precincts:
             self.id_precinct_map[precinct.unique_id] = precinct
 
     def add_counties(self, counties):
-        if self.level == 'COUNTY': super().add_agents(counties)
+        if self.vis_level == 'COUNTY': super().add_agents(counties)
         for county in counties:
             self.id_county_map[county.unique_id] = county
 
     def add_congdists(self, congdists):
-        if self.level == 'CONGDIST': super().add_agents(congdists)
+        if self.vis_level == 'CONGDIST': super().add_agents(congdists)
         for congdist in congdists:
             self.id_congdist_map[congdist.unique_id] = congdist
 
     def add_legdists(self, legdists):
-        if self.level == 'LEGDIST': super().add_agents(legdists)
+        if self.vis_level == 'LEGDIST': super().add_agents(legdists)
         for legdist in legdists:
             self.id_legdist_map[legdist.unique_id] = legdist
 
     def add_sendists(self, sendists):
-        if self.level == 'SENDIST': super().add_agents(sendists)
+        if self.vis_level == 'SENDIST': super().add_agents(sendists)
         for sendist in sendists:
             self.id_sendist_map[sendist.unique_id] = sendist
 

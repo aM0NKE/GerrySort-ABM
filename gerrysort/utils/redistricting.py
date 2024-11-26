@@ -65,7 +65,7 @@ def setup_gerrychain(model):
             allow_pair_reselection=True
         )
     )
-    if model.state in ['WI']:
+    if model.state in ['WI', 'MI', 'MA']:
         state_constraints = []
     else:
         state_constraints = [contiguous]

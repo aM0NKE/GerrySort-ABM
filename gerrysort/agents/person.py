@@ -80,7 +80,7 @@ class PersonAgent(mg.GeoAgent):
         return utility
     
     def calculate_discounted_utility(self, utility, new_location):
-        max_dist_dict = {'MN': 475, 'WI': 360, 'GA': 385, 'PA': 330, 'NC': 500}
+        max_dist_dict = {'MN': 475, 'WI': 360, 'GA': 385, 'PA': 330, 'MA': 190, 'NC': 500, 'LA': 370, 'TX': 805}
         max_dist = max_dist_dict[self.model.state]
         distance = great_circle((self.geometry.y, self.geometry.x), (new_location.y, new_location.x)).miles / max_dist
         return utility * (1 - (self.model.distance_decay * distance))

@@ -98,6 +98,9 @@ def projected_margin(model):
         else:
             model.projected_margin = 0
 
+    elif model.control_rule == 'FIXED':
+        model.projected_margin = 'FIXED'
+
 def variance(model): # TODO: turn this into % max population deviation
     population_cnts = [district.num_people for district in model.congdists]
     mean_population = sum(population_cnts) / len(population_cnts)
