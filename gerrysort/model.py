@@ -61,12 +61,12 @@ class GerrySort(mesa.Model):
         if control_rule == 'FIXED':
             if initial_control == 'Model':
                 self.control = self.projected_winner
-            elif initial_control in ['Democratic', 'Republican', 'Tied']:
+            elif initial_control in ['Democratic', 'Republican', 'Fair']:
                 self.control = initial_control
         else:
             if initial_control == 'Model':
                 self.control = self.projected_winner
-            elif initial_control in ['Democratic', 'Republican', 'Tied']:
+            elif initial_control in ['Democratic', 'Republican', 'Fair']:
                 self.control = initial_control
         # Setup datacollector and collect data
         self.datacollector.collect(self)

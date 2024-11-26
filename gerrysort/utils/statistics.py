@@ -64,12 +64,12 @@ def projected_winner(model):
             if model.rep_sendist_seats > model.dem_sendist_seats:
                 model.projected_winner = 'Republican'
             else:
-                model.projected_winner = 'Tied'
+                model.projected_winner = 'Fair'
         elif model.dem_legdist_seats > model.rep_legdist_seats:
             if model.dem_sendist_seats > model.rep_sendist_seats:
                 model.projected_winner = 'Democratic'
             else:
-                model.projected_winner = 'Tied'
+                model.projected_winner = 'Fair'
     
     elif model.control_rule == 'CONGDIST':
         # NOTE: Alternative option (only considers the US House)
@@ -78,7 +78,7 @@ def projected_winner(model):
         elif model.rep_congdist_seats < model.dem_congdist_seats:
             model.projected_winner = 'Democratic'
         else:
-            model.projected_winner = 'Tied'
+            model.projected_winner = 'Fair'
     
 def projected_margin(model):
     if model.control_rule == 'STATELEG':

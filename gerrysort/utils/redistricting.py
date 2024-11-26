@@ -131,7 +131,7 @@ def find_best_plan(model, congdist_data):
     elif model.control == 'Democratic':
         best_plan = max(eval_results, key=lambda x: eval_results[x]['partisan_utility'])
     # In case of tie, pick a fair map (closest to actual fraction dems/reps)
-    elif model.control == 'Tied':
+    elif model.control == 'Fair':
         best_plan = min(eval_results, key=lambda x: eval_results[x]['fairness_score'])
     return best_plan
         

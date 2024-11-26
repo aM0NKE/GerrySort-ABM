@@ -52,7 +52,7 @@ model_params = {
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
     "control_rule": mesa.visualization.Choice("Control Rule", value="FIXED", choices=["CONGDIST", "STATELEG", "FIXED"]),
-    "initial_control": mesa.visualization.Choice("Initial Control", value="Republican", choices=["Model", "Democratic", "Republican", "Tied"]),
+    "initial_control": mesa.visualization.Choice("Initial Control", value="Republican", choices=["Model", "Democratic", "Republican", "Fair"]),
     "max_iters": mesa.visualization.Slider("Max Iterations", 10, 2, 100, 1),
     "npop": mesa.visualization.Slider("Number of Agents", 5800, 100, 10000, 100),
     "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.50, 0.00, 1.00, 0.05),
