@@ -62,38 +62,38 @@ def projected_winner(model):
     if model.control_rule == 'STATELEG':
         if model.rep_legdist_seats > model.dem_legdist_seats:
             if model.rep_sendist_seats > model.dem_sendist_seats:
-                model.projected_winner = 'Republican'
+                model.projected_winner = 'Republicans'
             else:
                 model.projected_winner = 'Fair'
         elif model.dem_legdist_seats > model.rep_legdist_seats:
             if model.dem_sendist_seats > model.rep_sendist_seats:
-                model.projected_winner = 'Democratic'
+                model.projected_winner = 'Democrats'
             else:
                 model.projected_winner = 'Fair'
     
     elif model.control_rule == 'CONGDIST':
         # NOTE: Alternative option (only considers the US House)
         if model.rep_congdist_seats > model.dem_congdist_seats:
-            model.projected_winner = 'Republican'
+            model.projected_winner = 'Republicans'
         elif model.rep_congdist_seats < model.dem_congdist_seats:
-            model.projected_winner = 'Democratic'
+            model.projected_winner = 'Democrats'
         else:
             model.projected_winner = 'Fair'
     
 def projected_margin(model):
     if model.control_rule == 'STATELEG':
-        if model.projected_winner == 'Republican':
+        if model.projected_winner == 'Republicans':
             model.projected_margin = (model.rep_legdist_seats - model.dem_legdist_seats) + (model.rep_sendist_seats - model.dem_sendist_seats)
-        elif model.projected_winner == 'Democratic':
+        elif model.projected_winner == 'Democrats':
             model.projected_margin = (model.dem_legdist_seats - model.rep_legdist_seats) + (model.dem_sendist_seats - model.rep_sendist_seats)
         else:
             model.projected_margin = 0
 
     elif model.control_rule == 'CONGDIST':
         # NOTE: Alternative option (only considers the US House)
-        if model.projected_winner == 'Republican':
+        if model.projected_winner == 'Republicans':
             model.projected_margin = model.rep_congdist_seats - model.dem_congdist_seats
-        elif model.projected_winner == 'Democratic':
+        elif model.projected_winner == 'Democrats':
             model.projected_margin = model.dem_congdist_seats - model.rep_congdist_seats
         else:
             model.projected_margin = 0
@@ -101,31 +101,47 @@ def projected_margin(model):
     elif model.control_rule == 'FIXED':
         model.projected_margin = 'FIXED'
 
-def variance(model): # TODO: turn this into % max population deviation
+def max_pop_deviation(model):
+    '''
+    Max Single-District Deviation: The largest percentage deviation from the ideal population among all districts.
+    '''
     population_cnts = [district.num_people for district in model.congdists]
-    mean_population = sum(population_cnts) / len(population_cnts)
-    model.variance = sum((x - mean_population) ** 2 for x in population_cnts) / len(population_cnts)
+    ideal_population = model.npop / model.num_congdists
+    tmp_maxpopdev = 0
+    for congdist in model.congdists:
+        pop_dev = (abs(congdist.num_people - ideal_population)) / ideal_population
+        if pop_dev > tmp_maxpopdev:
+            tmp_maxpopdev = pop_dev
+    model.max_popdev = tmp_maxpopdev
 
 def segregation(model):
-    scores = []
-    for precinct in model.precincts:
-        precinct_population = precinct.dems + precinct.reps
-        for person in precinct_population:
-            same_color = []
-            for person2 in precinct_population:
-                if person == person2:
-                    continue
-                if model.space.get_person_by_id(person).color == model.space.get_person_by_id(person2).color:
-                    same_color.append(person2)
-            score = len(same_color) / len(precinct_population)
-            scores.append(score)
-    model.segregation = sum(scores) / len(scores)
+    segregation_scores = []
+    for county in model.counties:
+        if county.color == 'Red':
+            majority_pct = county.rep_cnt / county.num_people
+        elif county.color == 'Blue':
+            majority_pct = county.dem_cnt / county.num_people
+        else:
+            majority_pct = 0.5
+        segregation_scores.append(majority_pct)
+    model.avg_segregation = sum(segregation_scores) / len(segregation_scores)
 
-def compactness(model):
-    pass
+def compactness(model, formula='schwartzberg'):
+    '''
+    Note: Scores range from 0 to 1, where 0 is the least compact 
+          and 1 is the most compact.
+    '''
+    compactness_scores = []
+    for dist in model.congdists:
+        if formula == 'polsby_popper':
+            compactness = dist.polsby_popper()
+        elif formula == 'schwartzberg':
+            compactness = dist.schwartzberg()
+        compactness_scores.append(compactness)
+    model.avg_compactness = sum(compactness_scores) / len(compactness_scores)
 
 def competitiveness(model, competitive_threshold=0.10):
-    competitiveness_list = []
+    competitiveness_scores = []
     for dist in model.congdists:
         # print(f'Calculating competitiveness of district {dist.unique_id}...')
         # Callculate competitiveness score of district
@@ -135,7 +151,7 @@ def competitiveness(model, competitive_threshold=0.10):
         # print(f'Rep vote share: {rep_voteshare}')
         competitiveness = 1 - abs(dem_voteshare - rep_voteshare)
         # print(f'Competitiveness score: {competitiveness}')
-        competitiveness_list.append(competitiveness)
+        competitiveness_scores.append(competitiveness)
         # Set district competitiveness boolean
         margin_of_victory = abs(dem_voteshare - rep_voteshare)
         # print(f'Margin of victory: {margin_of_victory}')
@@ -143,7 +159,7 @@ def competitiveness(model, competitive_threshold=0.10):
         # print(f'Is Competitive: {dist.competitive}')
 
     # Update average model competitiveness
-    model.competitiveness = sum(competitiveness_list) / len(competitiveness_list)   
+    model.avg_competitiveness = sum(competitiveness_scores) / len(competitiveness_scores)   
 
     # Update total number of competitive districts
     model.competitive_seats = 0
@@ -200,7 +216,7 @@ def declination(model):
     model.declination = 2 * (theta_dem - theta_rep) / pi
 
 def update_statistics(model, statistics=[unhappy_happy, congdist_seats,
-                                        legdist_seats, sendist_seats, variance,
+                                        legdist_seats, sendist_seats, max_pop_deviation,
                                         segregation, competitiveness, compactness,
                                         efficiency_gap, mean_median, declination,
                                         projected_winner, projected_margin]):
@@ -208,21 +224,25 @@ def update_statistics(model, statistics=[unhappy_happy, congdist_seats,
         stat(model)
 
 def print_statistics(model):
+    print(f'[ENERGY] Number of Moves: {model.total_moves}')
+    print(f'[ENERGY] % Reassigned Precincts: {model.change_map}')
     print('Statistics:')
-    print(f'\tUnhappy: {model.unhappy} | Unhappy Red: {model.unhappyreps} | Unhappy Blue: {model.unhappydems}')
-    print(f'\tHappy: {model.happy} | Happy Red: {model.happyreps} | Happy Blue: {model.happydems}')
-    print(f'\tRed Congressional Seats: {model.rep_congdist_seats} | Blue Congressional Seats: {model.dem_congdist_seats} | Tied Congressional Seats: {model.tied_congdist_seats}')
-    print(f'\tPopulation counts: {[district.num_people for district in model.congdists]}')
-    print(f'\tVariance: {model.variance}')
-    print(f'\tRed State House Seats: {model.rep_legdist_seats} | Blue State House Seats: {model.dem_legdist_seats} | Tied State House Seats: {model.tied_sendist_seats}')
-    print(f'\tRed State Senate Seats: {model.rep_sendist_seats} | Blue State Senate Seats: {model.dem_sendist_seats} | Tied State Senate Seats: {model.tied_sendist_seats}')
-    print(f'\tEfficiency Gap: {model.efficiency_gap}')
-    print(f'\tMean Median: {model.mean_median}')
-    print(f'\tDeclination: {model.declination}')
     print(f'\tControl: {model.control}')
     print(f'\tProjected Winner: {model.projected_winner}')
     print(f'\tProjected Margin: {model.projected_margin}')
-    print(f'\t[ENERGY] Number of Moves: {model.total_moves}')
-    print(f'\t[ENERGY] % Reassigned Precincts: {model.change_map}')
+    print(f'\tRed State House Seats: {model.rep_legdist_seats} | Blue State House Seats: {model.dem_legdist_seats} | Tied State House Seats: {model.tied_sendist_seats}')
+    print(f'\tRed State Senate Seats: {model.rep_sendist_seats} | Blue State Senate Seats: {model.dem_sendist_seats} | Tied State Senate Seats: {model.tied_sendist_seats}')
+    print(f'\tUnhappy: {model.unhappy} | Unhappy Red: {model.unhappyreps} | Unhappy Blue: {model.unhappydems}')
+    print(f'\tHappy: {model.happy} | Happy Red: {model.happyreps} | Happy Blue: {model.happydems}')
+    print(f'\tRed Congressional Seats: {model.rep_congdist_seats} | Blue Congressional Seats: {model.dem_congdist_seats} | Tied Congressional Seats: {model.tied_congdist_seats}')
+    print(f'\tMax Population Deviation: {model.max_popdev}')
+    print(f'\tPopulation counts: {[district.num_people for district in model.congdists]}')
+    print(f'\tEfficiency Gap: {model.efficiency_gap}')
+    print(f'\tMean Median: {model.mean_median}')
+    print(f'\tDeclination: {model.declination}')
+    print(f'\tAverage Segregation: {model.avg_segregation}')
+    print(f'\tAverage Competitiveness: {model.avg_competitiveness}')
+    print(f'\tCompetitive Seats: {model.competitive_seats}')
+    print(f'\tAverage Compactness: {model.avg_compactness}')
     # print('Capacity counties:')
     # [print(f'\t{county.unique_id}: {county.num_people}/{county.capacity}') for county in model.counties]

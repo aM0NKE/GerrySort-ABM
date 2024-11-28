@@ -1,4 +1,5 @@
 import mesa_geo as mg
+import numpy as np
 from shapely.geometry import Point
 from math import ceil
 import random
@@ -69,3 +70,9 @@ class GeoAgent(mg.GeoAgent):
         
         return rep_wasted_votes, dem_wasted_votes
     
+    # SOURCE: https://cloud.r-project.org/web/packages/redistmetrics/vignettes/compactness.html
+    def polsby_popper(self):
+        return 1 / self.geometry.length / (2 * np.pi * np.sqrt(self.geometry.area / np.pi))
+
+    def schwartzberg(self):
+        return (4 * np.pi * self.geometry.area) / (self.geometry.length ** 2)

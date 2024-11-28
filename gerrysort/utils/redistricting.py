@@ -118,17 +118,17 @@ def find_best_plan(model, congdist_data):
         e = random.gauss(0, model.sigma)
         # NOTE: Add noise to fractions or total seats?
         print(f'Dem seatshare: {dem_seats / (dem_seats + rep_seats)}, Rep seatshare: {rep_seats / (dem_seats + rep_seats)}, Noise: {e}')
-        if model.control == 'Republican':
+        if model.control == 'Republicans':
             eval_results[plan]['partisan_utility'] = eval_results[plan]['rep_seatshare'] + e
-        elif model.control == 'Democratic':
+        elif model.control == 'Democrats':
             eval_results[plan]['partisan_utility'] = eval_results[plan]['dem_seatshare'] + e
         # Evaluate fairness of each plan
         eval_results[plan]['fairness_score'] = abs(eval_results[plan]['dem_seatshare'] - model_dems_frac) + e # NOTE: Noise on fair map?
 
     # Find best plan based on control
-    if model.control == 'Republican':
+    if model.control == 'Republicans':
         best_plan = max(eval_results, key=lambda x: eval_results[x]['partisan_utility'])
-    elif model.control == 'Democratic':
+    elif model.control == 'Democrats':
         best_plan = max(eval_results, key=lambda x: eval_results[x]['partisan_utility'])
     # In case of tie, pick a fair map (closest to actual fraction dems/reps)
     elif model.control == 'Fair':

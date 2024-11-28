@@ -40,10 +40,10 @@ def setup_datacollector(model):
     model.dem_sendist_seats = 0
     model.tied_sendist_seats = 0
 
-    model.segregation = 0
-    model.competitiveness = 0
+    model.avg_segregation = 0
+    model.avg_competitiveness = 0
     model.competitive_seats = 0
-    model.compactness = 0
+    model.avg_compactness = 0
 
     model.efficiency_gap = 0
     model.mean_median = 0
@@ -51,7 +51,7 @@ def setup_datacollector(model):
 
     model.projected_winner = None
     model.projected_margin = 0
-    model.variance = 0
+    model.max_popdev = 0
     model.change_map = 0
     model.datacollector = mesa.DataCollector(
         {'unhappy': 'unhappy', 
@@ -69,10 +69,10 @@ def setup_datacollector(model):
         'rep_sendist_seats': 'rep_sendist_seats',
         'dem_sendist_seats': 'dem_sendist_seats',
         'tied_sendist_seats': 'tied_sendist_seats',
-        'segregation': 'segregation',
-        'competitiveness': 'competitiveness',
+        'avg_segregation': 'avg_segregation',
+        'avg_competitiveness': 'avg_competitiveness',
         'competitive_seats': 'competitive_seats',
-        'compactness': 'compactness',
+        'avg_compactness': 'avg_compactness',
         'efficiency_gap': 'efficiency_gap',
         'mean_median': 'mean_median',
         'declination': 'declination',
@@ -80,7 +80,7 @@ def setup_datacollector(model):
         'projected_margin': 'projected_margin',
         'control': 'control',
         'total_moves': 'total_moves',
-        'variance': 'variance',
+        'max_popdev': 'max_popdev',
         'change_map': 'change_map'
         })
 
@@ -178,12 +178,12 @@ def create_population(model):
         precincts = {k: v if v == v else 0 for k, v in precincts.items()}
         # Make a probability distribution of precincts based on population
         precinct_probs = {precinct: precincts[precinct] / sum(precincts.values()) for precinct in precincts}
-        # Determine ratio of Republicans to Democrats in the county
-        rep_v_dem_ratio = getattr(county, f"{model.election}R") / (getattr(county, f"{model.election}D") + getattr(county, f"{model.election}R"))
         for _ in range(pop_county):
             # Select precinct based on population distribution
             random_precinct_id = random.choices(list(precinct_probs.keys()), weights=list(precinct_probs.values()))[0]
             random_precinct = model.space.get_precinct_by_id(random_precinct_id)
+            # Determine ratio of Republicans to Democrats in the precinct
+            rep_v_dem_ratio = getattr(random_precinct, f"{model.election}R") / (getattr(random_precinct, f"{model.election}D") + getattr(random_precinct, f"{model.election}R"))
             person = PersonAgent(
                 unique_id=uuid.uuid4().int,
                 model=model,

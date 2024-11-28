@@ -39,7 +39,7 @@ class ControlElement(mesa.visualization.TextElement):
     
 class DistsMetricsElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Change Map: {model.change_map:.2f}% | Competitiveness: {model.competitiveness:.2f} | Compactness: {model.compactness:.2f} | Segregation: {model.segregation:.2f}"
+        return f"% Change Map: {model.change_map:.2f}% | Avg. Competitiveness: {model.avg_competitiveness:.2f} | Avg. Compactness: {model.avg_compactness:.2f} | Avg. Segregation: {model.avg_segregation:.2f} | Max Pop. Dev.: {model.max_popdev:.2f}"
     
 class GerryMetricsElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -47,12 +47,13 @@ class GerryMetricsElement(mesa.visualization.TextElement):
     
 model_params = {
     "vis_level": mesa.visualization.Choice("Visualization Level", value="CONGDIST", choices=["PRECINCT", "COUNTY", "LEGDIST", "SENDIST", "CONGDIST"]),
-    "state": mesa.visualization.Choice("State", value="MA", choices=["MA", "MN", "WI", "MI", "PA", "GA", "NC", "OH", "TX", "LA"]),
+    "state": mesa.visualization.Choice("State", value="PA", choices=["MN", "WI", "MI", "PA", "GA", "TX"]),
+    # "state": mesa.visualization.Choice("State", value="MN", choices=["MA", "MN", "WI", "MI", "PA", "GA", "NC", "OH", "TX", "LA"]),
     "election": mesa.visualization.Choice("Election", value="PRES20", choices=["PRES20", "PRES16", "PRES12"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
     "control_rule": mesa.visualization.Choice("Control Rule", value="FIXED", choices=["CONGDIST", "STATELEG", "FIXED"]),
-    "initial_control": mesa.visualization.Choice("Initial Control", value="Republican", choices=["Model", "Democratic", "Republican", "Fair"]),
+    "initial_control": mesa.visualization.Choice("Initial Control", value="Democrats", choices=["Model", "Democrats", "Republicans", "Fair"]),
     "max_iters": mesa.visualization.Slider("Max Iterations", 10, 2, 100, 1),
     "npop": mesa.visualization.Slider("Number of Agents", 5800, 100, 10000, 100),
     "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.50, 0.00, 1.00, 0.05),
@@ -121,9 +122,10 @@ state_senate_seat_share_chart = mesa.visualization.ChartModule(
 dists_metrics_chart = mesa.visualization.ChartModule(
     [
         {"Label": "change_map", "Color": "Red"},
-        {"Label": "competitiveness", "Color": "Black"},
-        {"Label": "compactness", "Color": "Green"},
-        {"Label": "segregation", "Color": "Yellow"},
+        {"Label": "avg_competitiveness", "Color": "Black"},
+        {"Label": "avg_compactness", "Color": "Green"},
+        {"Label": "avg_segregation", "Color": "Yellow"},
+        {"Label": "max_popdev", "Color": "Blue"},
     ]
 )
 gerry_metrics_chart = mesa.visualization.ChartModule(
