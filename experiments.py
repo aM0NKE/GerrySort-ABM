@@ -8,12 +8,12 @@ runs = 10
 
 # Set params
 # states = ["MN", "WI", "MI", "PA", "GA", "TX"]
-states = ["TX"]
+states = ["PA", "GA"]
 election='PRES20'
-max_iters = 4
+max_iters = 5
 
 # npop_space = [5800, 5900, 10000, 13000, 11000, 30500]
-npop_space = [30500]
+npop_space = [13000, 11000]
 sorting_space = [True, False, True]
 gerrymandering_space = [False, True, True]
 

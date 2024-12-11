@@ -27,7 +27,7 @@ class PersonAgent(mg.GeoAgent):
         self.last_moved = float('inf')
         self.color = 'Red' if is_red else 'Blue'
     
-    def calculate_utility(self, precinct_id, A=1, alpha=((1/2), (1/4), 0, (1/4))): 
+    def calculate_utility(self, precinct_id, alpha=((1/2), (1/4), (1/4))): 
         '''        
         Formula: A * (X1**a1 * X2**a2 * X3**a3 * X4**a4)
 
@@ -51,33 +51,25 @@ class PersonAgent(mg.GeoAgent):
         else:
             X2 = 0
         
-        # Electoral district matching precinct
-        district = self.model.space.get_congdist_by_id(precinct.CONGDIST)
-        if self.color == district.color:
+        # Urbanicity matching county urbanicity
+        if self.color == 'Red' and county.COUNTY_RUCACAT == 'rural':
             X3 = 1
+        elif self.color == 'Red' and county.COUNTY_RUCACAT == 'small_town':
+            X3 = 1
+        elif self.color == 'Red' and county.COUNTY_RUCACAT == 'large_town':
+            X3 = .5
+        elif self.color == 'Blue' and county.COUNTY_RUCACAT == 'urban':
+            X3 = 1
+        elif self.color == 'Blue' and county.COUNTY_RUCACAT == 'large_town':
+            X3 = 1
+        elif self.color == 'Blue' and county.COUNTY_RUCACAT == 'small_town':
+            X3 = .5
         else:
             X3 = 0
         
-        # Urbanicity matching county urbanicity
-        if self.color == 'Red' and county.COUNTY_RUCACAT == 'rural':
-            X4 = 1
-        elif self.color == 'Red' and county.COUNTY_RUCACAT == 'small_town':
-            X4 = 1
-        elif self.color == 'Red' and county.COUNTY_RUCACAT == 'large_town':
-            X4 = .5
-        elif self.color == 'Blue' and county.COUNTY_RUCACAT == 'urban':
-            X4 = 1
-        elif self.color == 'Blue' and county.COUNTY_RUCACAT == 'large_town':
-            X4 = 1
-        elif self.color == 'Blue' and county.COUNTY_RUCACAT == 'small_town':
-            X4 = .5
-        else:
-            X4 = 0
-        
         # Return utility
-        a1, a2, a3, a4 = alpha
-        # utility = A * (X1**a1 + X2**a2 + X3**a3 + X4**a4) / 4 # NOTE: Changed to linear combination
-        utility = X1*a1 + X2*a2 + X4*a4
+        a1, a2, a3 = alpha
+        utility = X1*a1 + X2*a2 + X3*a3
         return utility
     
     def calculate_discounted_utility(self, utility, new_location):
