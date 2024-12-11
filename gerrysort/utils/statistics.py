@@ -22,6 +22,9 @@ def unhappy_happy(model):
             elif agent.color == 'Blue':
                 model.happydems += 1
 
+def avg_utility(model):
+    model.avg_utility = sum([agent.utility for agent in model.population]) / len(model.population)
+
 def congdist_seats(model):
     model.rep_congdist_seats = 0
     model.dem_congdist_seats = 0
@@ -101,26 +104,22 @@ def projected_margin(model):
     elif model.control_rule == 'FIXED':
         model.projected_margin = 'FIXED'
 
-def max_pop_deviation(model):
+def pop_deviation(model):
     '''
     Max Single-District Deviation: The largest percentage deviation from the ideal population among all districts.
     '''
-    population_cnts = [district.num_people for district in model.congdists]
     ideal_population = model.npop / model.num_congdists
-    tmp_maxpopdev = 0
-    for congdist in model.congdists:
-        pop_dev = (abs(congdist.num_people - ideal_population)) / ideal_population
-        if pop_dev > tmp_maxpopdev:
-            tmp_maxpopdev = pop_dev
-    model.max_popdev = tmp_maxpopdev
+    pop_devs = [(abs(congdist.num_people - ideal_population)) / ideal_population for congdist in model.congdists]        
+    model.max_popdev = max(pop_devs)
+    model.avg_popdev = sum(pop_devs) / len(pop_devs)
 
 def segregation(model):
     segregation_scores = []
-    for county in model.counties:
-        if county.color == 'Red':
-            majority_pct = county.rep_cnt / county.num_people
-        elif county.color == 'Blue':
-            majority_pct = county.dem_cnt / county.num_people
+    for congdist in model.congdists:
+        if congdist.color == 'Red':
+            majority_pct = congdist.rep_cnt / congdist.num_people
+        elif congdist.color == 'Blue':
+            majority_pct = congdist.dem_cnt / congdist.num_people
         else:
             majority_pct = 0.5
         segregation_scores.append(majority_pct)
@@ -181,7 +180,7 @@ def efficiency_gap(model):
     # Calculate efficiency gap
     model.efficiency_gap = (total_wasted_votes_blue - total_wasted_votes_red) / model.npop
 
-def mean_median(model):
+def mean_median(model): # NOTE: EQUAL POPULATION PROBLEM!
     # Get dem vote shares (1 - red_pct) for each district
     dem_pct = [1 - (dist.rep_cnt / dist.num_people) for dist in model.congdists]
     # Sort dem vote shares over all districts
@@ -215,8 +214,8 @@ def declination(model):
     # Calculate declination
     model.declination = 2 * (theta_dem - theta_rep) / pi
 
-def update_statistics(model, statistics=[unhappy_happy, congdist_seats,
-                                        legdist_seats, sendist_seats, max_pop_deviation,
+def update_statistics(model, statistics=[unhappy_happy, avg_utility, congdist_seats,
+                                        legdist_seats, sendist_seats, pop_deviation,
                                         segregation, competitiveness, compactness,
                                         efficiency_gap, mean_median, declination,
                                         projected_winner, projected_margin]):
@@ -234,6 +233,7 @@ def print_statistics(model):
     print(f'\tRed State Senate Seats: {model.rep_sendist_seats} | Blue State Senate Seats: {model.dem_sendist_seats} | Tied State Senate Seats: {model.tied_sendist_seats}')
     print(f'\tUnhappy: {model.unhappy} | Unhappy Red: {model.unhappyreps} | Unhappy Blue: {model.unhappydems}')
     print(f'\tHappy: {model.happy} | Happy Red: {model.happyreps} | Happy Blue: {model.happydems}')
+    print(f'\tAverage Utility: {model.avg_utility}')
     print(f'\tRed Congressional Seats: {model.rep_congdist_seats} | Blue Congressional Seats: {model.dem_congdist_seats} | Tied Congressional Seats: {model.tied_congdist_seats}')
     print(f'\tMax Population Deviation: {model.max_popdev}')
     print(f'\tPopulation counts: {[district.num_people for district in model.congdists]}')

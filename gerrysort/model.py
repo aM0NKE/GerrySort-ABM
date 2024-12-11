@@ -6,7 +6,7 @@ from .utils.redistricting import *
 import mesa
 
 class GerrySort(mesa.Model):
-    def __init__(self, state='MN', vis_level='CONGDIST', data=None, election='PRES20', max_iters=5, 
+    def __init__(self, state='MN', print=False, vis_level=None, data=None, election='PRES20', max_iters=5, 
                  npop=5800, sorting=True, gerrymandering=True, 
                  control_rule='CONGDIST', initial_control='Model', tolarence=0.5, 
                  beta=0.0, ensemble_size=5, epsilon=0.1, sigma=0.0,
@@ -16,6 +16,7 @@ class GerrySort(mesa.Model):
         self.schedule = mesa.time.BaseScheduler(self) # TODO: Look into other schedulers
         self.space = ElectoralDistricts()
         self.space.vis_level = vis_level
+        self.print = print
         self.election = election
         # Set model running conditions
         self.running = True
@@ -71,8 +72,9 @@ class GerrySort(mesa.Model):
         # Setup datacollector and collect data
         self.datacollector.collect(self)
         # Print statistics
-        print_statistics(self)
-        print('Model initialized!')
+        if self.print:
+            print_statistics(self)
+            print('Model initialized!')
 
     def update_majorities(self, maps):
         for map in maps:
@@ -83,7 +85,7 @@ class GerrySort(mesa.Model):
         [agent.update_utility() for agent in self.population]
 
     def self_sort(self):
-        print('Sorting...')
+        if self.print: print('Sorting...')
         # Move agents if unhappy
         self.total_moves = 0
         for agent in self.population:
@@ -93,44 +95,48 @@ class GerrySort(mesa.Model):
                 agent.last_moved += 1
 
     def gerrymander(self):
-        print(f'Gerrymandering in favor of {self.control}...')
-        # Generate ensemble
-        plans_list, district_data = generate_ensemble(self)
-        # Select plan with maximum partisan gain for party in control (or random in case of tie)
-        best_plan = find_best_plan(self, district_data) 
-        # Update the model with the best plan
-        reassigned_precincts = redistrict(self, plans_list, best_plan)
-        # Update precinct to congdist mapping
+        if self.print: print(f'Gerrymandering in favor of {self.control}...')
+        # Run the MCMC algorithm to find the best plan (optimized for the control party)
+        find_best_plan(self)
+        # Update the boundaries of the congressional districts and keep track of reassigned precincts
+        reassigned_precincts = redistrict(self)
+        # Update the precinct to congressional district map
         update_mapping(self, reassigned_precincts)
 
     def step(self):
-        print(f'Model step {self.iter}...')
+        if self.print: print(f'Model step {self.iter}...')
         # Gerrymander
         if self.gerrymandering: 
             self.gerrymander()
-            print(f'\tMap changed by {self.change_map}%')
+            if self.print: print(f'\tMap changed by {self.change_map}%')
+        update_statistics(self, statistics=[pop_deviation, competitiveness, compactness,
+                                            efficiency_gap, mean_median, declination])
         # Sort agents
         if self.sorting:
             self.self_sort()
-            print(f'\t{self.total_moves} agents moved.')
+            if self.print: print(f'\t{self.total_moves} agents moved.')
         # Update majorities (Election)
         self.update_majorities([self.precincts, self.counties, self.congdists, self.legdists, self.sendists])
         # Update utility of all agents
         self.update_utilities()
         # Update statistics
-        update_statistics(self)
+        update_statistics(self, statistics=[unhappy_happy, avg_utility, segregation,
+                                            congdist_seats, legdist_seats, sendist_seats,
+                                            projected_winner, projected_margin])
         # Collect data
         self.datacollector.collect(self)
         # Print statistics
-        print_statistics(self)
+        if self.print: print_statistics(self)
         if self.iter >= self.max_iters:
             self.running = False
-            print('Model converged! (t={})'.format(self.iter))
-            print('------------------------------------')
+            if self.print: 
+                print('Model converged! (t={})'.format(self.iter))
+                print('------------------------------------')
         else:
             # The party in control is the projected winner
             if self.control_rule != 'FIXED':    
                 self.control = self.projected_winner
             self.iter += 1
-            print('Model advanced!')
-            print('------------------------------------')
+            if self.print: 
+                print('Model advanced!')
+                print('------------------------------------')

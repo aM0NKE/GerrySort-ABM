@@ -27,9 +27,9 @@ class PersonAgent(mg.GeoAgent):
         self.last_moved = float('inf')
         self.color = 'Red' if is_red else 'Blue'
     
-    def calculate_utility(self, precinct_id, A=1, alpha=(1, 1, 1, 1)): 
+    def calculate_utility(self, precinct_id, A=1, alpha=((1/2), (1/4), 0, (1/4))): 
         '''        
-        Formula: A * (X1**a1 * X2**a2 * X3**a3) * X4
+        Formula: A * (X1**a1 * X2**a2 * X3**a3 * X4**a4)
 
         Variables:
             X1: precinct party majority match
@@ -37,26 +37,26 @@ class PersonAgent(mg.GeoAgent):
             X3: electoral district party majority match
             X4: urbanicity match
         '''
-        # Precinct matching precinct
+        # Precinct matching precinct (Do you want to live in party majority precinct, because surrounded by same politicals beliefs)
         precinct = self.model.space.get_precinct_by_id(precinct_id)
         if self.color == precinct.color:
             X1 = 1
         else:
-            X1 = 0.25
+            X1 = 0
         
         # County matching precinct
         county = self.model.space.get_county_by_id(precinct.COUNTY_NAME)
         if self.color == county.color:
             X2 = 1
         else:
-            X2 = 0.5
+            X2 = 0
         
         # Electoral district matching precinct
         district = self.model.space.get_congdist_by_id(precinct.CONGDIST)
         if self.color == district.color:
             X3 = 1
         else:
-            X3 = 0.75
+            X3 = 0
         
         # Urbanicity matching county urbanicity
         if self.color == 'Red' and county.COUNTY_RUCACAT == 'rural':
@@ -64,19 +64,20 @@ class PersonAgent(mg.GeoAgent):
         elif self.color == 'Red' and county.COUNTY_RUCACAT == 'small_town':
             X4 = 1
         elif self.color == 'Red' and county.COUNTY_RUCACAT == 'large_town':
-            X4 = 0.75
+            X4 = .5
         elif self.color == 'Blue' and county.COUNTY_RUCACAT == 'urban':
             X4 = 1
         elif self.color == 'Blue' and county.COUNTY_RUCACAT == 'large_town':
             X4 = 1
         elif self.color == 'Blue' and county.COUNTY_RUCACAT == 'small_town':
-            X4 = 0.75
-        else:
             X4 = .5
+        else:
+            X4 = 0
         
         # Return utility
         a1, a2, a3, a4 = alpha
-        utility = A * (X1**a1 * X2**a2 * X3**a3 * X4**a4)
+        # utility = A * (X1**a1 + X2**a2 + X3**a3 + X4**a4) / 4 # NOTE: Changed to linear combination
+        utility = X1*a1 + X2*a2 + X4*a4
         return utility
     
     def calculate_discounted_utility(self, utility, new_location):

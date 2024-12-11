@@ -13,7 +13,7 @@ import uuid
 def load_data(model, state, data):
     model.state = state
     if data is None:
-        data = gpd.read_file(os.path.join('gerrysort/data/processed', state + '.geojson'))
+        data = gpd.read_file(os.path.join('data/processed', state + '.geojson'))
     if len(data[~data.geometry.is_valid]) != 0:
         data['geometry'] = data.geometry.buffer(0)
     model.data = data.to_crs(model.space.crs)
@@ -26,6 +26,7 @@ def setup_datacollector(model):
     model.happy = 0
     model.happydems = 0
     model.happyreps = 0
+    model.avg_utility = 0
     model.total_moves = 0
     
     model.rep_congdist_seats = 0
@@ -52,6 +53,7 @@ def setup_datacollector(model):
     model.projected_winner = None
     model.projected_margin = 0
     model.max_popdev = 0
+    model.avg_popdev = 0
     model.change_map = 0
     model.datacollector = mesa.DataCollector(
         {'unhappy': 'unhappy', 
@@ -60,6 +62,7 @@ def setup_datacollector(model):
         'happy': 'happy',
         'happyreps': 'happyreps',
         'happydems': 'happydems',
+        'avg_utility': 'avg_utility',
         'rep_congdist_seats': 'rep_congdist_seats',
         'dem_congdist_seats': 'dem_congdist_seats',
         'tied_congdist_seats': 'tied_congdist_seats',
@@ -81,6 +84,7 @@ def setup_datacollector(model):
         'control': 'control',
         'total_moves': 'total_moves',
         'max_popdev': 'max_popdev',
+        'avg_popdev': 'avg_popdev',
         'change_map': 'change_map'
         })
 
@@ -95,7 +99,7 @@ def create_precincts(model):
     model.precincts = ac_precincts.from_GeoDataFrame(precinct_data, unique_id='VTDID')
     model.num_precincts = len(model.precincts)
     model.space.add_precincts(model.precincts)
-    print(f'{model.num_precincts} precincts added.')
+    if model.print: print(f'{model.num_precincts} precincts added.')
 
 def create_counties(model):
     # Select relevant columns
@@ -124,7 +128,7 @@ def create_counties(model):
     model.counties = ac_c.from_GeoDataFrame(county_data, unique_id='COUNTY_NAME')
     model.n_counties = len(model.counties)
     model.space.add_counties(model.counties)
-    print(f'{model.n_counties} counties added.')
+    if model.print: print(f'{model.n_counties} counties added.')
 
 def create_state_legislatures(model):
     # Add state house districts
@@ -134,7 +138,7 @@ def create_state_legislatures(model):
     model.legdists = ac_legdist.from_GeoDataFrame(legdist_data, unique_id='LEGDIST')
     model.num_legdists = len(model.legdists)
     model.space.add_legdists(model.legdists)
-    print(f'{model.num_legdists} state legislative districts added.')
+    if model.print: print(f'{model.num_legdists} state legislative districts added.')
     
     # Add state senate districts
     sendist_data = model.data[['SENDIST', f'{model.election}R', f'{model.election}D', f'{model.election}TOT', 'geometry']]
@@ -143,7 +147,7 @@ def create_state_legislatures(model):
     model.sendists = ac_sendist.from_GeoDataFrame(sendist_data, unique_id='SENDIST')
     model.num_sendists = len(model.sendists)
     model.space.add_sendists(model.sendists)
-    print(f'{model.num_sendists} state senate districts added.')
+    if model.print: print(f'{model.num_sendists} state senate districts added.')
 
 def create_congressional_districts(model):
     # Select relevant columns and aggregate data by congressional district
@@ -155,7 +159,7 @@ def create_congressional_districts(model):
     model.congdists = ac_congdist.from_GeoDataFrame(congdist_data, unique_id='CONGDIST')
     model.num_congdists = len(model.congdists)
     model.space.add_congdists(model.congdists)
-    print(f'{model.num_congdists} congressional districts added')
+    if model.print: print(f'{model.num_congdists} congressional districts added')
 
 def create_population(model):
     # Initialize model state variables
@@ -182,8 +186,11 @@ def create_population(model):
             # Select precinct based on population distribution
             random_precinct_id = random.choices(list(precinct_probs.keys()), weights=list(precinct_probs.values()))[0]
             random_precinct = model.space.get_precinct_by_id(random_precinct_id)
-            # Determine ratio of Republicans to Democrats in the precinct
-            rep_v_dem_ratio = getattr(random_precinct, f"{model.election}R") / (getattr(random_precinct, f"{model.election}D") + getattr(random_precinct, f"{model.election}R"))
+            # Determine ratio of Republicans to Democrats in the precinct (use try except)
+            try:
+                rep_v_dem_ratio = getattr(random_precinct, f"{model.election}R") / (getattr(random_precinct, f"{model.election}D") + getattr(random_precinct, f"{model.election}R"))
+            except ZeroDivisionError:
+                rep_v_dem_ratio = 0.5
             person = PersonAgent(
                 unique_id=uuid.uuid4().int,
                 model=model,
@@ -208,5 +215,5 @@ def create_population(model):
     # Add people to the space
     model.space.add_agents(model.population)
     model.npop = len(model.population)
-    print(f'Number of people added: {model.npop}')
+    if model.print:  print(f'Number of people added: {model.npop}')
     

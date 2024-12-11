@@ -163,6 +163,7 @@ cython_debug/
 .idea/
 testing/
 data/
+results/
 archive/
 *__MACOSX/
 
