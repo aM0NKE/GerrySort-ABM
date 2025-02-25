@@ -72,7 +72,8 @@ class GeoAgent(mg.GeoAgent):
     
     # SOURCE: https://cloud.r-project.org/web/packages/redistmetrics/vignettes/compactness.html
     def polsby_popper(self):
-        return 1 / self.geometry.length / (2 * np.pi * np.sqrt(self.geometry.area / np.pi))
+        return 4 * np.pi * (self.geometry.area / (self.geometry.length ** 2))
+    
+    def schwartzberg(self): # NOTE
+        return 1 / (self.geometry.length / (2 * np.pi * np.sqrt(self.geometry.area / np.pi)))
 
-    def schwartzberg(self):
-        return (4 * np.pi * self.geometry.area) / (self.geometry.length ** 2)

@@ -7,7 +7,7 @@ import mesa
 
 class ModelParamsElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Self Sorting: {model.sorting} | Gerrymandering: {model.gerrymandering} | Max Iters: {model.max_iters} | Tolarence Threshold: {model.tolarence} | Beta: {model.beta} | Ensemble Size: {model.ensemble_size} | Epsilon: {model.epsilon} | Sigma: {model.sigma} | Number of Moving Options: {model.n_moving_options} | Distance Decay: {model.distance_decay} | Moving Cooldown: {model.moving_cooldown} | Capacity Multiplier: {model.capacity_mul}"
+        return f"Self Sorting: {model.sorting} | Gerrymandering: {model.gerrymandering} | Max Iters: {model.max_iters} | Tolerance Threshold: {model.tolerance} | Beta: {model.beta} | Ensemble Size: {model.ensemble_size} | Epsilon: {model.epsilon} | Sigma: {model.sigma} | Number of Moving Options: {model.n_moving_options} | Distance Decay: {model.distance_decay} | Moving Cooldown: {model.moving_cooldown} | Capacity Multiplier: {model.capacity_mul}"
 
 class DemographicsElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -23,7 +23,7 @@ class UnhappynessElement(mesa.visualization.TextElement):
     
 class CongressionalElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"US Congress: D: {model.dem_congdist_seats} | R: {model.rep_congdist_seats} | T: {model.tied_congdist_seats}"
+        return f"US HoR: D: {model.dem_congdist_seats} | R: {model.rep_congdist_seats} | T: {model.tied_congdist_seats}"
     
 class StateHouseElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -39,11 +39,11 @@ class ControlElement(mesa.visualization.TextElement):
     
 class DistsMetricsElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"% Change Map: {model.change_map:.2f}% | Avg. Competitiveness: {model.avg_competitiveness:.2f} | Avg. Compactness: {model.avg_compactness:.2f} | Avg. Segregation: {model.avg_segregation:.2f} | Max Pop. Dev.: {model.max_popdev:.2f}"
+        return f"% Change Map: {model.change_map:.2f}% | Avg. Competitiveness: {model.avg_competitiveness:.2f} | Avg. Compactness: {model.avg_compactness:.2f} | Avg. County Segregation: {model.avg_county_segregation:.2f} | Max Pop. Dev.: {model.max_popdev:.2f}"
     
 class GerryMetricsElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"EG: {model.efficiency_gap:.2f} | M-M: {model.mean_median:.2f} | Dec: {model.declination:.2f}"
+        return f"EG: {model.efficiency_gap:.2f} | Dec: {model.declination:.2f} | M-M: {model.mean_median:.2f}"
     
 model_params = {
     "vis_level": mesa.visualization.Choice("Visualization Level", value="CONGDIST", choices=["PRECINCT", "COUNTY", "LEGDIST", "SENDIST", "CONGDIST"]),
@@ -52,15 +52,15 @@ model_params = {
     "election": mesa.visualization.Choice("Election", value="PRES20", choices=["PRES20", "PRES16", "PRES12"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
-    "control_rule": mesa.visualization.Choice("Control Rule", value="STATELEG", choices=["CONGDIST", "STATELEG", "FIXED"]),
+    "control_rule": mesa.visualization.Choice("Control Rule", value="CONGDIST", choices=["CONGDIST", "STATELEG", "FIXED"]),
     "initial_control": mesa.visualization.Choice("Initial Control", value="Model", choices=["Model", "Democrats", "Republicans", "Fair"]),
-    "max_iters": mesa.visualization.Slider("Max Iterations", 10, 2, 100, 1),
+    "max_iters": mesa.visualization.Slider("Max Iterations", 10, 1, 10, 1),
     "npop": mesa.visualization.Slider("Number of Agents", 5800, 100, 30500, 100),
-    "tolarence": mesa.visualization.Slider("Tolarence Threshold", 0.50, 0.00, 1.00, 0.05),
+    "tolerance": mesa.visualization.Slider("Tolerance Threshold", 0.50, 0.00, 1.00, 0.05),
     "beta": mesa.visualization.Slider("Beta (Temp. Sorting)", 100.0, 0.0, 100.0, 10),
-    "ensemble_size": mesa.visualization.Slider("Number of Proposed Maps", 50, 10, 1000, 10),
-    "epsilon": mesa.visualization.Slider("Epsilon", 0.01, 0.00, 1.00, 0.01),
-    "sigma": mesa.visualization.Slider("Sigma (Temp. Gerrymandering)", 0.1, 0.00, 1.00, 0.05),
+    "ensemble_size": mesa.visualization.Slider("Number of Proposed Maps", 100, 0, 10000, 100),
+    # "epsilon": mesa.visualization.Slider("Epsilon", 0.01, 0.00, 1.00, 0.01),
+    "sigma": mesa.visualization.Slider("Sigma (Temp. Gerrymandering)", 0.1, 0.00, 1.00, 0.01),
     "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 10, 5, 20, 1),
     "distance_decay": mesa.visualization.Slider("Distance Decay", 0.0, 0.0, 1.0, 0.1),
     "moving_cooldown": mesa.visualization.Slider("Moving Cooldown", 0, 0, 10, 1),
@@ -103,6 +103,7 @@ congressional_seat_share_chart = mesa.visualization.ChartModule(
         {"Label": "dem_congdist_seats", "Color": "Blue"},
         {"Label": "tied_congdist_seats", "Color": "Grey"},
         {"Label": "competitive_seats", "Color": "Black"},
+        {"Label": "predicted_seats", "Color": "Green"},
     ]
 )
 state_house_seat_share_chart = mesa.visualization.ChartModule(
@@ -122,18 +123,18 @@ state_senate_seat_share_chart = mesa.visualization.ChartModule(
 dists_metrics_chart = mesa.visualization.ChartModule(
     [
         {"Label": "change_map", "Color": "Red"},
-        {"Label": "avg_competitiveness", "Color": "Black"},
-        {"Label": "avg_compactness", "Color": "Green"},
-        {"Label": "avg_segregation", "Color": "Yellow"},
-        {"Label": "avg_popdev", "Color": "Red"},
-        {"Label": "max_popdev", "Color": "Blue"},
+        {"Label": "avg_competitiveness", "Color": "Green"},
+        {"Label": "avg_compactness", "Color": "Blue"},
+        # {"Label": "max_popdev", "Color": "Yellow"},
+        # {"Label": "avg_county_segregation", "Color": "Black"},
+        {"Label": "avg_congdist_segregation", "Color": "Grey"},
     ]
 )
 gerry_metrics_chart = mesa.visualization.ChartModule(
     [
-        {"Label": "declination", "Color": "Black"},
-        {"Label": "efficiency_gap", "Color": "Green"},
-        {"Label": "mean_median", "Color": "Yellow"},
+        {"Label": "efficiency_gap", "Color": "Black"},
+        {"Label": "declination", "Color": "Brown"},
+        {"Label": "mean_median", "Color": "Grey"},
     ]
 )
 

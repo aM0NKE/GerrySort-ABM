@@ -41,11 +41,12 @@ def setup_datacollector(model):
     model.dem_sendist_seats = 0
     model.tied_sendist_seats = 0
 
-    model.avg_segregation = 0
+    model.avg_county_segregation = 0
+    model.avg_congdist_segregation = 0
     model.avg_competitiveness = 0
     model.competitive_seats = 0
     model.avg_compactness = 0
-
+    model.predicted_seats = 0
     model.efficiency_gap = 0
     model.mean_median = 0
     model.declination = 0
@@ -72,10 +73,12 @@ def setup_datacollector(model):
         'rep_sendist_seats': 'rep_sendist_seats',
         'dem_sendist_seats': 'dem_sendist_seats',
         'tied_sendist_seats': 'tied_sendist_seats',
-        'avg_segregation': 'avg_segregation',
+        'avg_county_segregation': 'avg_county_segregation',
+        'avg_congdist_segregation': 'avg_congdist_segregation',
         'avg_competitiveness': 'avg_competitiveness',
         'competitive_seats': 'competitive_seats',
         'avg_compactness': 'avg_compactness',
+        'predicted_seats': 'predicted_seats',
         'efficiency_gap': 'efficiency_gap',
         'mean_median': 'mean_median',
         'declination': 'declination',

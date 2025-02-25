@@ -17,7 +17,7 @@ class ElectoralDistricts(mg.GeoSpace):
     precinct_congdist_map: Dict[str, str]
 
     def __init__(self):
-        super().__init__(crs=4326, warn_crs_conversion=True)
+        super().__init__(crs=5070, warn_crs_conversion=True)
         self.id_person_map = {}
         self.id_precinct_map = {}
         self.id_county_map = {}

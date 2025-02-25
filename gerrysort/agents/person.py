@@ -1,5 +1,5 @@
 import mesa_geo as mg
-from geopy.distance import great_circle
+from shapely.geometry import Point
 import numpy as np
 import random
 
@@ -27,7 +27,7 @@ class PersonAgent(mg.GeoAgent):
         self.last_moved = float('inf')
         self.color = 'Red' if is_red else 'Blue'
     
-    def calculate_utility(self, precinct_id, alpha=((1/2), (1/4), (1/4))): 
+    def calculate_utility(self, precinct_id, alpha=((1/3), (1/3), (1/3))): 
         '''        
         Formula: A * (X1**a1 * X2**a2 * X3**a3 * X4**a4)
 
@@ -72,15 +72,20 @@ class PersonAgent(mg.GeoAgent):
         utility = X1*a1 + X2*a2 + X3*a3
         return utility
     
-    def calculate_discounted_utility(self, utility, new_location):
+    def calculate_discounted_utility(self, utility, new_location):        
+        # Calculate Euclidean distance in meters (EPSG:5070 units)
+        distance_meters = self.geometry.distance(new_location)
+        # Convert distance to miles (assuming EPSG:5070 is in meters)
+        distance_miles = distance_meters * 0.000621371
+        # Calculate normalized distance
         max_dist_dict = {'MN': 475, 'WI': 360, 'MI': 500, 'OH': 300, 'PA': 330, 'MA': 190, 'NC': 500, 'GA': 385, 'LA': 370, 'TX': 805}
         max_dist = max_dist_dict[self.model.state]
-        distance = great_circle((self.geometry.y, self.geometry.x), (new_location.y, new_location.x)).miles / max_dist
-        return utility * (1 - (self.model.distance_decay * distance))
+        normalized_distance = distance_miles / max_dist
+        return utility * (1 - (self.model.distance_decay * normalized_distance))
 
     def update_utility(self):
         self.utility = self.calculate_utility(self.precinct_id)
-        self.is_unhappy = self.utility < self.model.tolarence
+        self.is_unhappy = self.utility < self.model.tolerance
 
     def calculate_delta_U(self, U_new, U_current):
         """
@@ -164,7 +169,10 @@ class PersonAgent(mg.GeoAgent):
             
             # Calculate discounted utility
             utility = self.calculate_utility(new_precinct_id)
-            discounted_utility = self.calculate_discounted_utility(utility, new_location)
+            if self.model.distance_decay == 0:
+                discounted_utility = utility
+            else:
+                discounted_utility = self.calculate_discounted_utility(utility, new_location)
             
             # Store moving options
             option_cnt += 1

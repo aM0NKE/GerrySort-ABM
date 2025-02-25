@@ -38,9 +38,9 @@ def setup_gerrychain(model):
     if model.current_map.crs != model.space.crs:
         model.current_map = model.current_map.to_crs(model.space.crs)
     model.current_map['geometry'] = model.current_map['geometry'].buffer(0) # Fix invalid geometries
-
+   
     # Setup gerrychain
-    model.graph = Graph.from_geodataframe(model.current_map) 
+    model.graph = Graph.from_geodataframe(model.current_map)
     updaters = {
         'TOTPOP': Tally('TOTPOP'),
         'NREPS': Tally('NREPS'),
@@ -63,54 +63,94 @@ def setup_gerrychain(model):
             pop_col="TOTPOP",
             updaters=updaters
         )
+    
     model.ideal_population = sum(initial_partition['TOTPOP'].values()) / len(initial_partition)
-    if model.print:
-        print("Ideal population:", model.ideal_population)
-
+    if model.print: print("Ideal population:", model.ideal_population)
+    
     proposal = partial(
         recom,
         pop_col='TOTPOP',
         pop_target=model.ideal_population,
         epsilon=model.epsilon,
+        node_repeats=1,
+        method = partial(
+            bipartition_tree,
+            max_attempts=100,
+            allow_pair_reselection=True
+        )
     )
     state_constraints = [] if model.state in ['WI', 'MI', 'MA'] else [contiguous]
-    if model.control == "Republicans":
-        model.opt_metric = lambda x: sum([1 for node in x.parts if x["NREPS"][node] > x["NDEMS"][node]])/len(x) + np.random.normal(0,  model.sigma)
-    elif model.control == "Democrats":
-        model.opt_metric = lambda x: sum([1 for node in x.parts if x["NDEMS"][node] > x["NREPS"][node]])/len(x) + np.random.normal(0,  model.sigma)
-    elif model.control == "Fair":
-        model.opt_metric = lambda x: abs(sum([1 for node in x.parts if x["NDEMS"][node] > x["NREPS"][node]])/len(x) - model.ndems / (model.ndems + model.nreps)) + np.random.normal(0,  model.sigma)
-    maximize = True if model.control in ["Republicans", "Democrats"] else False
-    model.map_generator = SingleMetricOptimizer(
-        initial_state=initial_partition,
+    model.recom_chain = MarkovChain(
         proposal=proposal,
         constraints=state_constraints,
-        optimization_metric=model.opt_metric,
-        maximize=maximize, # NOTE: Set to false when Fair
+        accept=always_accept,
+        initial_state=initial_partition,
+        total_steps=model.ensemble_size,
     )
 
-def find_best_plan(model):
+def generate_ensemble(model):
     setup_gerrychain(model)
-    # max_no_change = model.ensemble_size // 2
-    best_map = -1
-    best_step = 0 # Keep track at which step the best plan was found
-    change_cnt = 0
-    # for i, part in enumerate(model.map_generator.short_bursts(10, 100, with_progress_bar=True)):
-    # for i, part in enumerate(model.map_generator.simulated_annealing(model.ensemble_size, model.map_generator.jumpcycle_beta_function(200, 800), beta_magnitude=1, with_progress_bar=True)):
-    for i, part in enumerate(model.map_generator.tilted_run(model.ensemble_size, 0.1, with_progress_bar=True)):
-        if model.opt_metric(part) > best_map:
-            best_map = model.opt_metric(part)
-            best_step = i
-            change_cnt += 1
 
-    if model.print: print(f'The {model.control} have found the best plan at step {best_step} with a score of {best_map} after {change_cnt} changes')
-    model.current_map['NEW_CONGDIST'] = model.map_generator.best_part.assignment
-    model.current_map['NEW_CONGDIST'] = model.current_map['NEW_CONGDIST'].apply(lambda x: str(int(x) + 1).zfill(2))
-    if model.control == "Fair":
+    plans_list = {} # Dictionary to store plans
+    congdist_data = {}  # Dictionary to store data for each plan
+
+    # Generate ensemble of plans
+    for i, partition in enumerate(model.recom_chain.with_progress_bar()):
+        # Store plan and congdist data
+        plan_name = f'plan_{i}'
+        plans_list[plan_name] = pd.Series([partition.assignment[n] for n in model.graph.nodes], name=plan_name)        
+        congdist_data[plan_name] = {
+            congdist_name: {
+                'TOTPOP': partition['TOTPOP'][congdist_name],
+                'NREPS': partition['NREPS'][congdist_name],
+                'NDEMS': partition['NDEMS'][congdist_name]
+            }
+            for congdist_name in partition['TOTPOP'].keys()
+        }
+    return plans_list, congdist_data
+
+def find_best_plan(model, congdist_data):
+    model_dems_frac = model.ndems / (model.ndems + model.nreps)
+    eval_results = {}
+
+    # Evaluate each plan
+    for plan in congdist_data.keys():
+        rep_seats = 0
+        dem_seats = 0
+        for congdist in congdist_data[plan].keys():
+            if congdist_data[plan][congdist]['NREPS'] > congdist_data[plan][congdist]['NDEMS']:
+                rep_seats += 1
+            elif congdist_data[plan][congdist]['NREPS'] < congdist_data[plan][congdist]['NDEMS']:
+                dem_seats += 1
+        eval_results[plan] = {
+            'rep_congressional_seats': rep_seats,
+            'dem_congressional_seats': dem_seats,
+            'dem_seatshare': dem_seats / (dem_seats + rep_seats),
+            'rep_seatshare': rep_seats / (dem_seats + rep_seats),
+        }
+        # Score the plans
+        if model.print: print(f'Dem seatshare: {dem_seats / (dem_seats + rep_seats)}, Rep seatshare: {rep_seats / (dem_seats + rep_seats)}')
+        if model.control == 'Republicans':
+            eval_results[plan]['partisan_utility'] = eval_results[plan]['rep_seatshare'] + random.gauss(0, model.sigma)
+        elif model.control == 'Democrats':
+            eval_results[plan]['partisan_utility'] = eval_results[plan]['dem_seatshare'] + random.gauss(0, model.sigma)
+        # Evaluate fairness of each plan
+        eval_results[plan]['fairness_score'] = abs(eval_results[plan]['dem_seatshare'] - model_dems_frac) + random.gauss(0, model.sigma)
+
+    # Find best plan based on control
+    if model.control == 'Republicans':
+        best_plan = max(eval_results, key=lambda x: eval_results[x]['partisan_utility'])
+        model.predicted_seats = eval_results[best_plan]['rep_congressional_seats']
+    elif model.control == 'Democrats':
+        best_plan = max(eval_results, key=lambda x: eval_results[x]['partisan_utility'])
+        model.predicted_seats = eval_results[best_plan]['dem_congressional_seats']
+    # In case of tie, pick a fair map (closest to actual fraction dems/reps)
+    elif model.control == 'Fair':
+        best_plan = min(eval_results, key=lambda x: eval_results[x]['fairness_score'])
         model.predicted_seats = 0
-    else:
-        model.predicted_seats = int(best_map * len(model.current_map['CONGDIST'].unique()))
-
+   
+    return best_plan
+        
 def mapping_congdist_ids(model):
     # Dissolve geometries by CONGDIST and NEW_CONGDIST, converting to EPSG:4326 in one step
     dissolved_congdist = model.current_map.to_crs(model.space.crs).dissolve(by='CONGDIST', aggfunc='sum')
@@ -140,9 +180,9 @@ def mapping_congdist_ids(model):
     # Return the mapping dictionary
     return dissolved_new_congdist['CONGDIST'].to_dict()
 
-def redistrict(model):
-    # Store current congdist assignments
-    initial_congdists = model.current_map.set_index('VTDID')['CONGDIST'].copy()
+def redistrict(model, plans_list, best_plan):
+    # Update the model with the best plan
+    model.current_map['NEW_CONGDIST'] = plans_list[best_plan]
 
     # Generate the mapping for new congdists
     new_congdists_mapping = mapping_congdist_ids(model)
@@ -151,6 +191,7 @@ def redistrict(model):
     model.current_map['NEW_CONGDIST'] = model.current_map['NEW_CONGDIST'].map(new_congdists_mapping)
 
     # Create a dictionary to store precincts that changed districts
+    initial_congdists = model.current_map.set_index('VTDID')['CONGDIST'].copy()
     reassigned_precincts = {
         vtdid: new_congdist 
         for vtdid, new_congdist in model.current_map[['VTDID', 'NEW_CONGDIST']].itertuples(index=False)

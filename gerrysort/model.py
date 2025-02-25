@@ -2,21 +2,21 @@ from .space import ElectoralDistricts
 from .utils.initialization import *
 from .utils.statistics import *
 from .utils.redistricting import *
+# from .utils.redistricting2 import *
 
 import mesa
 
 class GerrySort(mesa.Model):
-    def __init__(self, state='MN', print=False, vis_level=None, data=None, election='PRES20', max_iters=5, 
+    def __init__(self, state='PA', print_output=False, vis_level=None, data=None, election='PRES20', max_iters=4, 
                  npop=5800, sorting=True, gerrymandering=True, 
-                 control_rule='CONGDIST', initial_control='Model', tolarence=0.5, 
-                 beta=0.0, ensemble_size=5, epsilon=0.1, sigma=0.0,
-                 n_moving_options=5, moving_cooldown=0, 
-                 distance_decay=0.0, capacity_mul=1.0):
+                 control_rule='STATELEG', initial_control='Model', tolerance=0.5, 
+                 beta=100.0, ensemble_size=100, epsilon=0.01, sigma=0.1,
+                 n_moving_options=10, distance_decay=0.0, capacity_mul=1.0):
         # Set up the scheduler and space
         self.schedule = mesa.time.BaseScheduler(self) # TODO: Look into other schedulers
         self.space = ElectoralDistricts()
         self.space.vis_level = vis_level
-        self.print = print
+        self.print = print_output
         self.election = election
         # Set model running conditions
         self.running = True
@@ -27,13 +27,12 @@ class GerrySort(mesa.Model):
         self.sorting = sorting
         self.gerrymandering = gerrymandering
         self.control_rule = control_rule
-        self.tolarence = tolarence
+        self.tolerance = tolerance
         self.beta = beta
         self.ensemble_size = ensemble_size
         self.epsilon = epsilon
         self.sigma = sigma
         self.n_moving_options = n_moving_options
-        self.moving_cooldown = moving_cooldown
         self.distance_decay = distance_decay
         self.capacity_mul = capacity_mul
         # Load GeoData file
@@ -59,16 +58,10 @@ class GerrySort(mesa.Model):
         # Update statistics
         update_statistics(self)
          # Ininitialize party controlling the state based on initial plan
-        if control_rule == 'FIXED':
-            if initial_control == 'Model':
-                self.control = self.projected_winner
-            elif initial_control in ['Democrats', 'Republicans', 'Fair']:
-                self.control = initial_control
-        else:
-            if initial_control == 'Model':
-                self.control = self.projected_winner
-            elif initial_control in ['Democrats', 'Republicans', 'Fair']:
-                self.control = initial_control
+        if initial_control == 'Model':
+            self.control = self.projected_winner
+        elif initial_control in ['Democrats', 'Republicans', 'Fair']:
+            self.control = initial_control
         # Setup datacollector and collect data
         self.datacollector.collect(self)
         # Print statistics
@@ -89,7 +82,7 @@ class GerrySort(mesa.Model):
         # Move agents if unhappy
         self.total_moves = 0
         for agent in self.population:
-            if agent.is_unhappy and self.moving_cooldown <= agent.last_moved:
+            if agent.is_unhappy:
                 agent.sort()
             else:
                 agent.last_moved += 1
@@ -103,24 +96,37 @@ class GerrySort(mesa.Model):
         # Update the precinct to congressional district map
         update_mapping(self, reassigned_precincts)
 
+    # def gerrymander(self):
+    #     if self.print: print(f'Gerrymandering in favor of {self.control}...')
+    #     # Generate ensemble
+    #     plans_list, district_data = generate_ensemble(self)
+    #     # Select plan with maximum partisan gain for party in control (or random in case of tie)
+    #     best_plan = find_best_plan(self, district_data) 
+    #     # Update the model with the best plan
+    #     reassigned_precincts = redistrict(self, plans_list, best_plan)
+    #     # Update precinct to congdist mapping
+    #     update_mapping(self, reassigned_precincts)
+
     def step(self):
         if self.print: print(f'Model step {self.iter}...')
+        
         # Gerrymander
         if self.gerrymandering: 
             self.gerrymander()
             if self.print: print(f'\tMap changed by {self.change_map}%')
-        update_statistics(self, statistics=[pop_deviation, competitiveness, compactness,
+        update_statistics(self, statistics=[competitiveness, compactness,
                                             efficiency_gap, mean_median, declination])
         # Sort agents
         if self.sorting:
             self.self_sort()
             if self.print: print(f'\t{self.total_moves} agents moved.')
+        
         # Update majorities (Election)
         self.update_majorities([self.precincts, self.counties, self.congdists, self.legdists, self.sendists])
         # Update utility of all agents
         self.update_utilities()
         # Update statistics
-        update_statistics(self, statistics=[unhappy_happy, avg_utility, segregation,
+        update_statistics(self, statistics=[pop_deviation, unhappy_happy, avg_utility, segregation,
                                             congdist_seats, legdist_seats, sendist_seats,
                                             projected_winner, projected_margin])
         # Collect data
