@@ -9,8 +9,8 @@ size = comm.Get_size()
 
 # Define parameters
 state = 'GA'
-runs = 100       # Number of runs per parameter set 
-batch_size = 5   # Workers will receive this many jobs at a time
+runs = 250        # Number of runs per parameter set 
+batch_size = 25   # Workers will receive this many jobs at a time
 output_dir = f'results/experiments/interventions/{state}_runs_{runs}_MPI'
 
 # Master
@@ -83,7 +83,7 @@ else:
             control_rule='CONGDIST',
             initial_control='Model',
             tolerance=0.5,
-            beta=200.0,
+            beta=100.0,
             ensemble_size=250,
             epsilon=0.01,
             sigma=0.01,

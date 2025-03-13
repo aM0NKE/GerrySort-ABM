@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --exclusive
+#SBATCH -C cpunode
 #SBATCH --time=12:00:00
 #SBATCH -N 2
 #SBATCH --ntasks-per-node=16
-#SBATCH -C cpunode
 
 source ~/miniconda3/bin/activate gerrysort
 

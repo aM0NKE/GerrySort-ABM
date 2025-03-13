@@ -10,12 +10,12 @@ size = comm.Get_size()
 # Define parameters
 state = 'GA'
 sample_size = 256 # Sobol sample size
-batch_size = 5  # Workers will receive this many jobs at a time
+batch_size = 25  # Workers will receive this many jobs at a time
 output_dir = f'results/sensitivity_analysis/global/{state}_sample_{sample_size}_MPI'
 
 if rank == 0:
     from SALib.sample import sobol as sobel_sample
-
+    
     os.makedirs(output_dir, exist_ok=True)
     param_file_path = os.path.join(output_dir, 'parameter_space.csv')
 
@@ -28,7 +28,7 @@ if rank == 0:
         ],
         'bounds': [
             [0.0, 1.0],     # tolerance
-            [0.0, 200.0],   # beta
+            [0.0, 100.0],   # beta
             [50, 500],      # ensemble_size
             [0.001, 0.1],   # sigma
             [1, 20],        # n_moving_options
@@ -78,7 +78,8 @@ if rank == 0:
     # Send termination signal to workers
     for i in range(1, size):
         comm.send(None, dest=i, tag=1)
-
+        
+# Workers
 else:
     import geopandas as gpd
     from gerrysort.model import GerrySort

@@ -135,7 +135,7 @@ def find_best_plan(model):
                 model.predicted_seats = sum([1 for node in part.parts if part["NREPS"][node] > part["NDEMS"][node]])
             elif model.control == "Democrats":
                 model.predicted_seats = sum([1 for node in part.parts if part["NDEMS"][node] > part["NREPS"][node]])
-            print(f'Found new best plan at step {i} with a score of {best_score} and {model.predicted_seats} seats in favor of {model.control}')
+            if model.print: print(f'Found new best plan at step {i} with a score of {best_score} and {model.predicted_seats} seats in favor of {model.control}')
             best_step = i
             change_cnt += 1
     if model.print: print(f'The {model.control} have found the best plan at step {best_step} with a score of {model.map_score} after {change_cnt} changes')

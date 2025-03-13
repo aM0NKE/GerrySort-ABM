@@ -1,6 +1,7 @@
 #!/bin/bash
 #SBATCH --exclusive
-#SBATCH --time=01:30:00
+#SBATCH -C cpunode
+#SBATCH --time=16:00:00
 #SBATCH -N 2
 #SBATCH --ntasks-per-node=16
 
