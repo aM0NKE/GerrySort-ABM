@@ -1,7 +1,7 @@
 import mesa_geo as mg
 import numpy as np
-from shapely.geometry import Point
 from math import ceil
+from shapely.geometry import Point
 import random
 
 class GeoAgent(mg.GeoAgent):
@@ -30,9 +30,9 @@ class GeoAgent(mg.GeoAgent):
             self.capacity = 0
             self.precincts = []
         elif self.type == 'congressional':
+            self.compactness = 0
+            self.competitiveness_score = 0
             self.competitive = None
-            self.precincts = []
-        else: # State house and senate districts
             self.precincts = []
 
     def random_point(self):
@@ -70,10 +70,13 @@ class GeoAgent(mg.GeoAgent):
         
         return rep_wasted_votes, dem_wasted_votes
     
+    def competitiveness(self):
+        return 1 - (abs(self.dem_cnt - self.rep_cnt) / self.num_people)
+    
     # SOURCE: https://cloud.r-project.org/web/packages/redistmetrics/vignettes/compactness.html
     def polsby_popper(self):
-        return 4 * np.pi * (self.geometry.area / (self.geometry.length ** 2))
+        return 4 * np.pi * (self.geometry.area / (self.geometry.length ** 2 + 1e-9))
     
-    def schwartzberg(self): # NOTE
+    def schwartzberg(self):
         return 1 / (self.geometry.length / (2 * np.pi * np.sqrt(self.geometry.area / np.pi)))
 

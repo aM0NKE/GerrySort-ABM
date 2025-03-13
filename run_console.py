@@ -11,7 +11,7 @@ def gerrysort_model(state, params, data, save=False):
     # Set fixed parameters
     npops = {'MN': 5800, 'WI': 5900, 'MI': 10000, 'PA': 13000, 'GA': 11000, 'TX': 30500}
     npop = npops[state]
-    print_output = True
+    print_output = False
     vis_level = None
     election = 'PRES20'
     max_iters = 4
@@ -53,7 +53,7 @@ def gerrysort_model(state, params, data, save=False):
         
     return model_data
 
-state = 'MN'
+state = 'GA'
 data = gpd.read_file(f'data/processed/{state}.geojson')
 params = {
     'sorting': True,

@@ -59,8 +59,9 @@ def gerrysort_model(state, params, data, run_id, output_dir):
     return model_data
 
 # Main script
-states = ['WI', 'WI']
-runs = 5
+states = ['GA']
+start_from = 19
+runs = 1
 
 # Define the baseline parameters
 baseline_params = {
@@ -86,7 +87,7 @@ param_ranges = {
 
 for state in states:
     # Create output directory for OFAT results
-    output_dir = f'results/sensitivity_analysis/local/{state}'
+    output_dir = f'results/sensitivity_analysis/local/{state}_MODEL'
     os.makedirs(output_dir, exist_ok=True)
 
     # Load data
@@ -105,6 +106,6 @@ for state in states:
                 param_index = list(baseline_params.keys()).index(param_name)
                 params[param_index] = value
                 # Generate a unique run ID
-                run_id = f"{param_name}_{value}_run_{run}"
+                run_id = f"{param_name}_{value}_run_{run+start_from}"
                 # Run the model
                 model_data = gerrysort_model(state, params, data, run_id, output_dir)

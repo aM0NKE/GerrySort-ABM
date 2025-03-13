@@ -54,9 +54,9 @@ def gerrysort_model(state, params, data, run_id, output_dir):
     return model_data
 
 start_from = 0
-runs = 1
+runs = 25
 
-states = ["GA", "WI"]
+states = ["MI"]
 gerrymandering_space = [False, True, True]
 sorting_space = [True, False, True]
 initial_controls = ['Democrats', 'Republicans', 'Fair', 'Model']

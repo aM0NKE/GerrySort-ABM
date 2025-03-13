@@ -8,12 +8,8 @@ class ElectoralDistricts(mg.GeoSpace):
     id_person_map: Dict[str, GeoAgent]
     id_precinct_map: Dict[str, GeoAgent]
     id_county_map: Dict[str, GeoAgent]
-    id_legdist_map: Dict[str, GeoAgent]
-    id_sendist_map: Dict[str, GeoAgent]
     id_congdist_map: Dict[str, GeoAgent]
     precinct_county_map: Dict[str, str]
-    precinct_legdist_map: Dict[str, str]
-    precinct_sendist_map: Dict[str, str]
     precinct_congdist_map: Dict[str, str]
 
     def __init__(self):
@@ -21,12 +17,8 @@ class ElectoralDistricts(mg.GeoSpace):
         self.id_person_map = {}
         self.id_precinct_map = {}
         self.id_county_map = {}
-        self.id_legdist_map = {}
-        self.id_sendist_map = {}
         self.id_congdist_map = {}
         self.precinct_county_map = {}
-        self.precinct_legdist_map = {}
-        self.precinct_sendist_map = {}
         self.precinct_congdist_map = {}
         self.vis_level = None
 
@@ -49,16 +41,6 @@ class ElectoralDistricts(mg.GeoSpace):
         for congdist in congdists:
             self.id_congdist_map[congdist.unique_id] = congdist
 
-    def add_legdists(self, legdists):
-        if self.vis_level == 'LEGDIST': super().add_agents(legdists)
-        for legdist in legdists:
-            self.id_legdist_map[legdist.unique_id] = legdist
-
-    def add_sendists(self, sendists):
-        if self.vis_level == 'SENDIST': super().add_agents(sendists)
-        for sendist in sendists:
-            self.id_sendist_map[sendist.unique_id] = sendist
-
     def create_precinct_to_county_map(self, precincts):
         for precinct in precincts:
             # Get county
@@ -73,18 +55,6 @@ class ElectoralDistricts(mg.GeoSpace):
             congdist = self.get_congdist_by_id(precinct.CONGDIST)
             congdist.precincts.append(precinct.unique_id)
             self.precinct_congdist_map[precinct.unique_id] = precinct.CONGDIST
-
-    def create_precinct_to_legdist_map(self, precincts):
-        for precinct in precincts:
-            legdist = self.get_legdist_by_id(precinct.LEGDIST)
-            legdist.precincts.append(precinct.unique_id)
-            self.precinct_legdist_map[precinct.unique_id] = precinct.LEGDIST
-
-    def create_precinct_to_sendist_map(self, precincts):
-        for precinct in precincts:
-            sendist = self.get_sendist_by_id(precinct.SENDIST)
-            sendist.precincts.append(precinct.unique_id)
-            self.precinct_sendist_map[precinct.unique_id] = precinct.SENDIST
 
     def add_person_to_space(self, person, new_precinct_id, new_position=None):
         # Update precinct attributes
@@ -107,27 +77,16 @@ class ElectoralDistricts(mg.GeoSpace):
         # Update electoral district attributes
         new_congdist_id = self.precinct_congdist_map[new_precinct_id]
         congdist = self.get_congdist_by_id(new_congdist_id)
-        new_legdist_id = self.precinct_legdist_map[new_precinct_id]
-        legdist = self.get_legdist_by_id(new_legdist_id)
-        new_sendist_id = self.precinct_sendist_map[new_precinct_id]
-        sendist = self.get_sendist_by_id(new_sendist_id)
+
         congdist.num_people += 1
-        legdist.num_people += 1
-        sendist.num_people += 1
         if person.color == 'Red':
             congdist.rep_cnt += 1
-            legdist.rep_cnt += 1
-            sendist.rep_cnt += 1
         elif person.color == 'Blue':
             congdist.dem_cnt += 1
-            legdist.dem_cnt += 1
-            sendist.dem_cnt += 1
         # Update person attributes
         person.precinct_id = new_precinct_id
         person.county_id = new_county_id
         person.congdist_id = new_congdist_id
-        person.legdist_id = new_legdist_id
-        person.sendist_id = new_sendist_id
         if new_position is not None: 
             person.geometry = new_position
         else:
@@ -154,25 +113,15 @@ class ElectoralDistricts(mg.GeoSpace):
             county.dem_cnt -= 1
         # Update electoral district attributes
         congdist = self.get_congdist_by_id(person.congdist_id)
-        legdist = self.get_legdist_by_id(person.legdist_id)
-        sendist = self.get_sendist_by_id(person.sendist_id)
         congdist.num_people -= 1
-        legdist.num_people -= 1
-        sendist.num_people -= 1
         if person.color == 'Red':
             congdist.rep_cnt -= 1
-            legdist.rep_cnt -= 1
-            sendist.rep_cnt -= 1
         elif person.color == 'Blue':
             congdist.dem_cnt -= 1
-            legdist.dem_cnt -= 1
-            sendist.dem_cnt -= 1
         # Clear attributes
         person.precinct_id = None
         person.county_id = None
         person.district_id = None
-        person.legdist_id = None
-        person.sendist_id = None
         person.geometry = None
         # Remove agent to map
         super().remove_agent(person)
@@ -197,12 +146,6 @@ class ElectoralDistricts(mg.GeoSpace):
     
     def get_county_by_id(self, county_id) -> GeoAgent:
         return self.id_county_map.get(county_id)
-    
-    def get_legdist_by_id(self, district_id) -> GeoAgent:
-        return self.id_legdist_map.get(district_id)
-    
-    def get_sendist_by_id(self, district_id) -> GeoAgent:
-        return self.id_sendist_map.get(district_id)
     
     def get_congdist_by_id(self, district_id) -> GeoAgent:
         return self.id_congdist_map.get(district_id)

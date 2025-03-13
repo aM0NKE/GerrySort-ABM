@@ -23,16 +23,15 @@ initial_controls = ['Democrats']
 # initial_controls = ['Model']
 
 tolerance = 0.5
-beta = 100.0
-ensemble_size = 250
+beta = 200.0
+ensemble_size = 1000
 epsilon = 0.01
-sigma = 0.0
+sigma = 0.01
 n_moving_options = 10
-moving_cooldown = 0
 distance_decay = 0.0
 capacity_mul = 1.0
 
-output_path = 'results/experiments/gerry_methods/250tilted_run/'
+output_path = f'results/experiments/gerry_methods/{ensemble_size}our_method/'
 
 for i, state in enumerate(states):
     print(f'CONDUCTING EXPERIMENTS FOR {state}')
@@ -70,7 +69,6 @@ for i, state in enumerate(states):
                     epsilon=epsilon,
                     sigma=sigma,
                     n_moving_options=n_moving_options,
-                    moving_cooldown=moving_cooldown,
                     distance_decay=distance_decay,
                     capacity_mul=capacity_mul
                 )
@@ -79,29 +77,6 @@ for i, state in enumerate(states):
                 # Save model data
                 model_data = model.datacollector.get_model_vars_dataframe()
                 model_data.to_csv(os.path.join(output_path, f'{state}_{initial_control}_{control_rule}_{exp}_{run}.csv'), index=False)
-                
-                # Save param configuration
-                params_name = os.path.join(output_path, f'{state}_{initial_control}_{control_rule}_{exp}_{run}_params.txt')
-                with open(params_name, 'w') as f:
-                    f.write(f'State: {state}\n')
-                    f.write(f'Experiment: {exp}\n')
-                    f.write(f'Run: {run}\n')
-                    f.write(f'Params:\n')
-                    f.write(f'\tMax Iters: {max_iters}\n')
-                    f.write(f'\tNpop: {npop}\n')
-                    f.write(f'\tSorting: {sorting}\n')
-                    f.write(f'\tGerrymandering: {gerrymandering}\n')
-                    f.write(f'\tControl Rule: {control_rule}\n')
-                    f.write(f'\tInitial Control: {initial_control}\n')
-                    f.write(f'\tTolerance: {tolerance}\n')
-                    f.write(f'\tBeta: {beta}\n')
-                    f.write(f'\tEnsemble Size: {ensemble_size}\n')
-                    f.write(f'\tEpsilon: {epsilon}\n')
-                    f.write(f'\tSigma: {sigma}\n')
-                    f.write(f'\tN Moving Options: {n_moving_options}\n')
-                    f.write(f'\tMoving Cooldown: {moving_cooldown}\n')
-                    f.write(f'\tDistance Decay: {distance_decay}\n')
-                    f.write(f'\tCapacity Mul: {capacity_mul}')
 
     print(f'FINISHED EXPERIMENTS FOR {state}')
     print('-----------------------------------')

@@ -1,5 +1,4 @@
 import mesa_geo as mg
-from shapely.geometry import Point
 import numpy as np
 import random
 
@@ -9,22 +8,16 @@ class PersonAgent(mg.GeoAgent):
     precinct_id: str
     county_id: str
     congdist_id: str
-    legdist_id: str
-    sendist_id: str
-    last_moved: int
     color: str
 
-    def __init__(self, unique_id, model, geometry, crs, is_red, precinct_id, 
-                 county_id, congdist_id, legdist_id, sendist_id):
+    def __init__(self, unique_id, model, geometry, crs, 
+                 is_red, precinct_id, county_id, congdist_id):
         super().__init__(unique_id, model, geometry, crs)
         self.utility = 0
         self.is_unhappy = None
         self.precinct_id = precinct_id
         self.county_id = county_id
         self.congdist_id = congdist_id
-        self.legdist_id = legdist_id
-        self.sendist_id = sendist_id
-        self.last_moved = float('inf')
         self.color = 'Red' if is_red else 'Blue'
     
     def calculate_utility(self, precinct_id, alpha=((1/3), (1/3), (1/3))): 
@@ -32,26 +25,22 @@ class PersonAgent(mg.GeoAgent):
         Formula: A * (X1**a1 * X2**a2 * X3**a3 * X4**a4)
 
         Variables:
-            X1: precinct party majority match
-            X2: county party majority match 
-            X3: electoral district party majority match
-            X4: urbanicity match
+            X1: precinct party majority match (Direct Neighbors)
+            X2: county party majority match (Neighborhood)
+            X3: urbanicity match (Dems prefer urban, Reps prefer rural)
         '''
-        # Precinct matching precinct (Do you want to live in party majority precinct, because surrounded by same politicals beliefs)
         precinct = self.model.space.get_precinct_by_id(precinct_id)
         if self.color == precinct.color:
             X1 = 1
         else:
             X1 = 0
-        
-        # County matching precinct
+
         county = self.model.space.get_county_by_id(precinct.COUNTY_NAME)
         if self.color == county.color:
             X2 = 1
         else:
             X2 = 0
         
-        # Urbanicity matching county urbanicity
         if self.color == 'Red' and county.COUNTY_RUCACAT == 'rural':
             X3 = 1
         elif self.color == 'Red' and county.COUNTY_RUCACAT == 'small_town':
@@ -65,22 +54,28 @@ class PersonAgent(mg.GeoAgent):
         elif self.color == 'Blue' and county.COUNTY_RUCACAT == 'small_town':
             X3 = .5
         else:
-            X3 = 0
+            X3 = 0.25
         
         # Return utility
         a1, a2, a3 = alpha
         utility = X1*a1 + X2*a2 + X3*a3
         return utility
-    
-    def calculate_discounted_utility(self, utility, new_location):        
-        # Calculate Euclidean distance in meters (EPSG:5070 units)
+
+    def calculate_discounted_utility(self, utility, new_location):
+        # Compute Euclidean distance in meters
         distance_meters = self.geometry.distance(new_location)
-        # Convert distance to miles (assuming EPSG:5070 is in meters)
+
+        # Convert meters to miles
         distance_miles = distance_meters * 0.000621371
-        # Calculate normalized distance
+
+        # Max distance dictionary (in miles)
         max_dist_dict = {'MN': 475, 'WI': 360, 'MI': 500, 'OH': 300, 'PA': 330, 'MA': 190, 'NC': 500, 'GA': 385, 'LA': 370, 'TX': 805}
         max_dist = max_dist_dict[self.model.state]
+
+        # Calculate normalized distance
         normalized_distance = distance_miles / max_dist
+
+        # Return discounted utility
         return utility * (1 - (self.model.distance_decay * normalized_distance))
 
     def update_utility(self):
@@ -130,10 +125,7 @@ class PersonAgent(mg.GeoAgent):
                     new_precinct_id=chosen_option['precinct_id'],
                     new_position=chosen_option['position']
                 )            
-            self.last_moved = 0
             self.model.total_moves += 1
-        else:
-            self.last_moved += 1
         
         # Update agent's utility
         self.utility = chosen_option['utility']
@@ -146,8 +138,6 @@ class PersonAgent(mg.GeoAgent):
             'precinct_id': self.precinct_id,
             'county_id': self.county_id,
             'congdist_id': self.congdist_id,
-            'legdist_id': self.legdist_id,
-            'sendist_id': self.sendist_id,
             'utility': self.utility,
             'discounted_utility': self.utility
         }
@@ -156,7 +146,7 @@ class PersonAgent(mg.GeoAgent):
             # Find counties that are not at capacity and select one at random
             not_full_capacity_counties = [county for county in self.model.counties if county.num_people < county.capacity and county.unique_id != self.county_id]
             new_county = random.choice(not_full_capacity_counties)
-            # Make dictionary of PRECINT_ID:USPRSTOTAL for each precinct in the county
+            # Make dictionary of TOTPOP for each precinct in the county
             precincts = {precinct: self.model.space.get_precinct_by_id(precinct).TOTPOP for precinct in new_county.precincts}
             # Set all TOTPOP values of nan to 0
             precincts = {k: v if v == v else 0 for k, v in precincts.items()}
@@ -181,8 +171,6 @@ class PersonAgent(mg.GeoAgent):
                 'precinct_id': new_precinct_id,
                 'county_id': new_county.unique_id,
                 'congdist_id': self.model.space.precinct_congdist_map[new_precinct_id],
-                'legdist_id': self.model.space.precinct_legdist_map[new_precinct_id],
-                'sendist_id': self.model.space.precinct_sendist_map[new_precinct_id],
                 'utility': utility,
                 'discounted_utility': discounted_utility
             }
