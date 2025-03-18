@@ -29,8 +29,10 @@ filelock==3.13.1
 fiona==1.10.1
 folium==0.14.0
 fonttools==4.55.3
-# GDAL==3.6.2
+GDAL==3.6.2
+geographiclib==2.0
 geopandas==0.14.4
+geopy==2.4.1
 gerrychain==0.3.2
 h11==0.14.0
 humanize==3.10.0
