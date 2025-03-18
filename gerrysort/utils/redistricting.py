@@ -67,10 +67,9 @@ def setup_gerrychain(model):
         pop_col='TOTPOP',
         pop_target=model.ideal_population,
         epsilon=model.epsilon,
-        node_repeats=100,
+        node_repeats=1,
         method = partial(
             bipartition_tree,
-            max_attempts=100,
             allow_pair_reselection=True
         )
     )
@@ -122,7 +121,7 @@ def find_best_plan(model):
     best_score = -1
     best_step = 0 # Keep track at which step the best plan was found
     change_cnt = 0
-    for i, part in enumerate(model.map_generator.tilted_run(model.ensemble_size, 0.1, with_progress_bar=False)):
+    for i, part in enumerate(model.map_generator.tilted_run(model.ensemble_size, 0.1, with_progress_bar=model.print)):
     # ALTERNATIVE GENERATION ALGORITHMS
     # for i, part in enumerate(model.map_generator.short_bursts(10, 100, with_progress_bar=True)):
     # for i, part in enumerate(model.map_generator.simulated_annealing(model.ensemble_size, model.map_generator.jumpcycle_beta_function(200, 800), beta_magnitude=1, with_progress_bar=True)):

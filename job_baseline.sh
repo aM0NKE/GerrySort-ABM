@@ -7,4 +7,4 @@
 
 source ~/miniconda3/bin/activate gerrysort
 
-mpirun python3 runMPI_local_sensitivity.py
+mpirun python3 runMPI_exp_baseline.py

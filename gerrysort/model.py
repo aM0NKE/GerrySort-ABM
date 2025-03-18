@@ -117,8 +117,7 @@ class GerrySort(mesa.Model):
         # Gerrymander
         if self.gerrymandering: 
             self.gerrymander()
-        update_statistics(self, statistics=[competitiveness, compactness,
-                                            efficiency_gap, mean_median, declination])
+        
         # Sort agents
         if self.sorting:
             self.self_sort()
@@ -128,8 +127,8 @@ class GerrySort(mesa.Model):
         # Update utility of all agents
         self.update_utilities()
         # Update statistics
-        update_statistics(self, statistics=[pop_deviation, unhappy_happy, avg_utility, segregation,
-                                            congdist_seats, projected_winner, projected_margin])
+        update_statistics(self)
+        
         # Collect data
         self.datacollector.collect(self)
         # Print statistics

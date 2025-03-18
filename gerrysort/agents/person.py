@@ -145,6 +145,8 @@ class PersonAgent(mg.GeoAgent):
         while option_cnt < self.model.n_moving_options:
             # Find counties that are not at capacity and select one at random
             not_full_capacity_counties = [county for county in self.model.counties if county.num_people < county.capacity and county.unique_id != self.county_id]
+            if len(not_full_capacity_counties) == 0:
+                break
             new_county = random.choice(not_full_capacity_counties)
             # Make dictionary of TOTPOP for each precinct in the county
             precincts = {precinct: self.model.space.get_precinct_by_id(precinct).TOTPOP for precinct in new_county.precincts}
