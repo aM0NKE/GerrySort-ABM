@@ -81,7 +81,11 @@ def setup_gerrychain(model):
         elif model.intervention == 'Compact':
             w1, w2 = model.intervention_weight, 1 - model.intervention_weight
             model.opt_metric = lambda x: w1 * (sum([4 * np.pi * (x["area"][node] / (x["perimeter"][node] ** 2 + 1e-9)) for node in x.parts]) / len(x)) + w2 * (sum([1 for node in x.parts if x["NREPS"][node] > x["NDEMS"][node]]) / len(x)) + np.random.normal(0,  model.sigma)
-        else:
+        elif model.intervention == 'Both':
+            w1, w2 = model.intervention_weight, 1 - model.intervention_weight
+            model.opt_metric = lambda x: w1 * ((sum([4 * np.pi * (x["area"][node] / (x["perimeter"][node] ** 2 + 1e-9)) for node in x.parts]) / len(x)) + (1 - (sum([abs(x["NDEMS"][node] - x["NREPS"][node]) / (x["NDEMS"][node] + x["NREPS"][node] + 1e-9) for node in x.parts]) / len(x)))) + w2 * (sum([1 for node in x.parts if x["NREPS"][node] > x["NDEMS"][node]]) / len(x)) + np.random.normal(0,  model.sigma)
+
+        else: # Partisan Gerrymandering
             model.opt_metric = lambda x: (sum([1 for node in x.parts if x["NREPS"][node] > x["NDEMS"][node]]) / len(x)) + np.random.normal(0,  model.sigma)
 
     elif model.control == "Democrats":
@@ -91,7 +95,10 @@ def setup_gerrychain(model):
         elif model.intervention == 'Compact':
             w1, w2 = model.intervention_weight, 1 - model.intervention_weight
             model.opt_metric = lambda x: w1 * (sum([4 * np.pi * (x["area"][node] / (x["perimeter"][node] ** 2 + 1e-9)) for node in x.parts]) / len(x)) + w2 * (sum([1 for node in x.parts if x["NDEMS"][node] > x["NREPS"][node]]) / len(x)) + np.random.normal(0,  model.sigma)
-        else:
+        elif model.intervention == 'Both':
+            w1, w2 = model.intervention_weight, 1 - model.intervention_weight
+            model.opt_metric = lambda x: w1 * ((sum([4 * np.pi * (x["area"][node] / (x["perimeter"][node] ** 2 + 1e-9)) for node in x.parts]) / len(x)) + (1 - (sum([abs(x["NDEMS"][node] - x["NREPS"][node]) / (x["NDEMS"][node] + x["NREPS"][node] + 1e-9) for node in x.parts]) / len(x)))) + w2 * (sum([1 for node in x.parts if x["NDEMS"][node] > x["NREPS"][node]]) / len(x)) + np.random.normal(0,  model.sigma)
+        else: # Partisan Gerrymandering
             model.opt_metric = lambda x: (sum([1 for node in x.parts if x["NDEMS"][node] > x["NREPS"][node]]) / len(x)) + np.random.normal(0,  model.sigma)
 
     elif model.control == "Fair":
@@ -100,7 +107,9 @@ def setup_gerrychain(model):
             # model.opt_metric = lambda x: sum([1 for node in x.parts if abs(x["NDEMS"][node] - x["NREPS"][node]) / (x["NDEMS"][node] + x["NREPS"][node] + 1e-9) < 0.1]) / len(x) + np.random.normal(0, model.sigma)
         elif model.intervention == 'Compact':
             model.opt_metric = lambda x: (sum([4 * np.pi * (x["area"][node] / (x["perimeter"][node] ** 2 + 1e-9)) for node in x.parts]) / len(x))
-        else:
+        elif model.intervention == 'Both':
+            model.opt_metric = lambda x: ((sum([4 * np.pi * (x["area"][node] / (x["perimeter"][node] ** 2 + 1e-9)) for node in x.parts]) / len(x)) + (1 - (sum([abs(x["NDEMS"][node] - x["NREPS"][node]) / (x["NDEMS"][node] + x["NREPS"][node] + 1e-9) for node in x.parts]) / len(x)))) + np.random.normal(0, model.sigma)
+        else: # Fair Gerrymandering
             model.opt_metric = lambda x: (abs((sum([1 for node in x.parts if x["NDEMS"][node] > x["NREPS"][node]]) / len(x)) - (model.ndems / (model.ndems + model.nreps)))) + np.random.normal(0,  model.sigma)
     
     if model.control == "Fair" and model.intervention == "None":
@@ -225,3 +234,11 @@ def update_mapping(model, reassigned_precincts):
         for person_id in precinct.reps + precinct.dems:
             person = model.space.get_person_by_id(person_id)
             person.congdist_id = congdist_id
+
+def save_current_map(model, filename):
+    """
+    Save the current map to a GeoJSON file.
+    """
+    extract_demographics_current_map(model)
+    model.current_map.to_file(filename, driver='GeoJSON')
+    if model.print: print(f'Current map saved to {filename}')

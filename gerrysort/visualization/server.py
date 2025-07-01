@@ -7,7 +7,7 @@ import mesa
 
 class ModelParamsElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Self Sorting: {model.sorting} | Gerrymandering: {model.gerrymandering} | Max Iters: {model.max_iters} | Tolerance Threshold: {model.tolerance} | Beta: {model.beta} | Ensemble Size: {model.ensemble_size} | Epsilon: {model.epsilon} | Sigma: {model.sigma} | Number of Moving Options: {model.n_moving_options} | Distance Decay: {model.distance_decay} | Capacity Multiplier: {model.capacity_mul}"
+        return f"Self Sorting: {model.sorting} | Gerrymandering: {model.gerrymandering} | Max Iters: {model.max_iters} | Tolerance Threshold: {model.tolerance} | Beta: {model.beta} | Ensemble Size: {model.ensemble_size} | Sigma: {model.sigma} | Epsilon: {model.epsilon} | Number of Moving Options: {model.n_moving_options} | Distance Decay: {model.distance_decay} | Capacity Multiplier: {model.capacity_mul}"
 
 class DemographicsElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -22,26 +22,28 @@ class ControlElement(mesa.visualization.TextElement):
         return f"Control: {model.control} | Control Margin: {model.projected_margin}"
 
 model_params = {
+    "save_plans": mesa.visualization.Checkbox("Save Plans", True),
+    "print_output": mesa.visualization.Checkbox("Print Output", True),
     "vis_level": mesa.visualization.Choice("Visualization Level", value="CONGDIST", choices=["CONGDIST", "COUNTY", "PRECINCT"]),
-    "state": mesa.visualization.Choice("State", value="GA", choices=["MN", "WI", "MI", "PA", "GA", "TX"]),
+    "state": mesa.visualization.Choice("State", value="PA", choices=["MN", "WI", "MI", "PA", "GA", "TX"]),
     # "state": mesa.visualization.Choice("State", value="MN", choices=["MA", "MN", "WI", "MI", "PA", "GA", "NC", "OH", "TX", "LA"]),
     "election": mesa.visualization.Choice("Election", value="PRES20", choices=["PRES20", "PRES16", "PRES12"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
-    "control_rule": mesa.visualization.Choice("Control Rule", value="CONGDIST", choices=["CONGDIST", "FIXED"]),
-    "initial_control": mesa.visualization.Choice("Initial Control", value="Model", choices=["Model", "Democrats", "Republicans", "Fair"]),
+    "control_rule": mesa.visualization.Choice("Control Rule", value="FIXED", choices=["CONGDIST", "FIXED"]),
+    "initial_control": mesa.visualization.Choice("Initial Control", value="Democrats", choices=["Model", "Democrats", "Republicans", "Fair"]),
     "max_iters": mesa.visualization.Slider("Max Iterations", 4, 1, 10, 1),
-    "npop": mesa.visualization.Slider("Number of Agents", 11000, 1000, 30500, 100),
+    "npop": mesa.visualization.Slider("Number of Agents", 13000, 1000, 30500, 100),
     "tolerance": mesa.visualization.Slider("Tolerance Threshold", 0.50, 0.00, 1.00, 0.05),
     "beta": mesa.visualization.Slider("Beta (Temp. Sorting)", 100.0, 0.0, 100.0, 5),
     "ensemble_size": mesa.visualization.Slider("Number of Proposed Maps", 250, 50, 1000, 50),
+    "sigma": mesa.visualization.Slider("Sigma (Temp. Gerrymandering)", 0.01, 0.00, 0.25, 0.01),
     "epsilon": mesa.visualization.Slider("Epsilon", 0.01, 0.01, 1.00, 0.01),
-    "sigma": mesa.visualization.Slider("Sigma (Temp. Gerrymandering)", 0.01, 0.00, 0.1, 0.01),
     "n_moving_options": mesa.visualization.Slider("Number of Moving Options", 10, 1, 20, 1),
     "distance_decay": mesa.visualization.Slider("Distance Decay", 0.0, 0.0, 1.0, 0.01),
     "capacity_mul": mesa.visualization.Slider("Capacity Multiplier", 1.0, 0.9, 2.0, 0.01),
-    "intervention": mesa.visualization.Choice("Intervention", value="None", choices=["None", "Competitive", "Compact"]),
-    "intervention_weight": mesa.visualization.Slider("Intervention Weight", 0.0, 0.0, 1.0, 0.01),
+    "intervention": mesa.visualization.Choice("Intervention", value="None", choices=["None", "Competitive", "Compact", "Both"]),
+    "intervention_weight": mesa.visualization.Slider("Intervention Weight", 1.0, 0.0, 1.0, 0.01),
 }
 
 def schelling_draw(agent):

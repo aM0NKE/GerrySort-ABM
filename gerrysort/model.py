@@ -7,16 +7,19 @@ from .utils.redistricting import *
 import mesa
 
 class GerrySort(mesa.Model):
-    def __init__(self, state='GA', print_output=False, vis_level=None, data=None, election='PRES20', 
+    def __init__(self, state='GA', print_output=False, save_plans=False, vis_level=None, data=None, election='PRES20', 
                  max_iters=4, npop=11000, sorting=True, gerrymandering=True, 
                  control_rule='CONGDIST', initial_control='Model', tolerance=0.5, beta=100.0,
                  ensemble_size=250, epsilon=0.01, sigma=0.01,
                  n_moving_options=10, distance_decay=0.0, capacity_mul=1.0, 
                  intervention='None', intervention_weight=0.0):
+        self.simulation_id = str(uuid.uuid4())[:8]  # Unique simulation ID
+        self.state = state
         # Set up the scheduler and space
         self.schedule = mesa.time.RandomActivation(self)
         self.space = ElectoralDistricts()
         self.print = print_output
+        self.save_plans = save_plans
         self.space.vis_level = vis_level
         self.steps = 0
         self.running = True
@@ -133,6 +136,10 @@ class GerrySort(mesa.Model):
         self.datacollector.collect(self)
         # Print statistics
         if self.print: print_statistics(self)
+        if self.save_plans:
+            # Filename format: state_simulationid_stepnumber
+            filename = f'results/plans/{self.simulation_id}_{self.state}_{self.control_rule}_{self.control}_{self.steps}.geojson'
+            save_current_map(self, filename=filename)
         if self.steps >= self.max_iters:
             self.running = False
             if self.print: 
