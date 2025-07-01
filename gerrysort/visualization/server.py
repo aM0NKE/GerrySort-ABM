@@ -26,7 +26,6 @@ model_params = {
     "print_output": mesa.visualization.Checkbox("Print Output", True),
     "vis_level": mesa.visualization.Choice("Visualization Level", value="CONGDIST", choices=["CONGDIST", "COUNTY", "PRECINCT"]),
     "state": mesa.visualization.Choice("State", value="PA", choices=["MN", "WI", "MI", "PA", "GA", "TX"]),
-    # "state": mesa.visualization.Choice("State", value="MN", choices=["MA", "MN", "WI", "MI", "PA", "GA", "NC", "OH", "TX", "LA"]),
     "election": mesa.visualization.Choice("Election", value="PRES20", choices=["PRES20", "PRES16", "PRES12"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
