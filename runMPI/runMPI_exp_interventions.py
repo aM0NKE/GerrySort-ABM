@@ -11,7 +11,7 @@ size = comm.Get_size()
 state = 'GA'
 runs = 250       # Number of runs per parameter set 
 batch_size = 1   # Workers will receive this many jobs at a time
-output_dir = f'results/experiments/interventions/{state}_runs_{runs}_MPI'
+output_dir = f'results/experiments/interventions/{state}_runs_{runs}_tol_0_MPI'
 
 # Master
 if rank == 0:
@@ -83,7 +83,7 @@ else:
             gerrymandering=True,
             control_rule='CONGDIST',
             initial_control='Model',
-            tolerance=0.5,
+            tolerance=0.0,
             beta=100.0,
             ensemble_size=250,
             epsilon=0.01,

@@ -166,6 +166,8 @@ data/
 results/
 archive/
 *__MACOSX/
+runMPI/
 
 # Files
 *.DS_Store
+gerrysort/utils/randomredistricting.py

@@ -30,7 +30,7 @@ if rank == 0:
             [0.0, 1.0],     # tolerance
             [0.0, 100.0],   # beta
             [10, 500],      # ensemble_size
-            [0, 0.25],   # sigma
+            [0, 0.25],      # sigma
             [1, 20],        # n_moving_options
             [0.0, 1.0],     # distance_decay
             [0.9, 1.25]      # capacity_mul

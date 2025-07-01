@@ -8,8 +8,8 @@ rank = comm.Get_rank()
 size = comm.Get_size()
 
 # Define parameters
-state = 'GA'
-runs = 1000       # Number of runs per parameter set 
+state = 'MI'
+runs = 5000       # Number of runs per parameter set 
 batch_size = 1    # Workers will receive this many jobs at a time
 output_dir = f'results/experiments/baseline/{state}_runs_{runs}_MPI'
 
