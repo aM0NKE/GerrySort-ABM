@@ -123,7 +123,7 @@ class GerrySort(mesa.Model):
         # Print statistics
         if self.print: print_statistics(self)
         if self.save_plans:
-            filename = f'results/plans/{self.state}_{self.simulation_id}_{self.steps}.geojson'
+            filename = f'data/generated_maps/{self.state}_sim_{self.simulation_id}_step_{self.steps}.geojson'
             save_current_map(self, filename=filename)
         
         # Check if the model should stop

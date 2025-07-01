@@ -162,7 +162,7 @@ cython_debug/
 # Folders
 .idea/
 testing/
-data/
+data2/
 results/
 archive/
 *__MACOSX/
