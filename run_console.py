@@ -3,7 +3,7 @@ import os
 
 from gerrysort.model import GerrySort
 
-# Define the model wrapper for GerrySort (same as before)
+# Define the model wrapper for GerrySort
 def gerrysort_model(state, params, data, save=False):
     """
     Wrapper function to run the GerrySort model with sampled parameters.
@@ -11,7 +11,7 @@ def gerrysort_model(state, params, data, save=False):
     # Set fixed parameters
     npops = {'MN': 5800, 'WI': 5900, 'MI': 10000, 'PA': 13000, 'GA': 11000, 'TX': 30500}
     npop = npops[state]
-    print_output = False
+    print_output = True
     vis_level = None
     election = 'PRES20'
     max_iters = 4
@@ -46,6 +46,7 @@ def gerrysort_model(state, params, data, save=False):
     # Run the model and extract the output of interest
     model.run_model()
     model_data = model.datacollector.get_model_vars_dataframe()
+
     if save:
         # Save model data for this run
         model_data_filename = 'model_data_single_run.csv'
@@ -61,7 +62,7 @@ params = {
     'control_rule': 'CONGDIST',
     'initial_control': 'Model',
     'tolerance': 0.5,
-    'beta': 200.0,
+    'beta': 100.0,
     'ensemble_size': 250,
     'sigma': 0.01,
     'n_moving_options': 10,
