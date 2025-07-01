@@ -2,7 +2,6 @@ from .space import ElectoralDistricts
 from .utils.initialization import *
 from .utils.statistics import *
 from .utils.redistricting import *
-# from .utils.randomredistricting import *
 
 import mesa
 
@@ -63,8 +62,7 @@ class GerrySort(mesa.Model):
                                             efficiency_gap, mean_median, declination, 
                                             pop_deviation, unhappy_happy, avg_utility, segregation,
                                             congdist_seats, projected_winner, projected_margin])
-        
-         # Ininitialize party controlling the state based on initial plan
+        # Ininitialize party controlling the state based on initial plan
         if initial_control == 'Model':
             self.control = self.projected_winner
         elif initial_control in ['Democrats', 'Republicans', 'Fair']:
@@ -101,31 +99,19 @@ class GerrySort(mesa.Model):
         # Update the precinct to congressional district map
         update_mapping(self, reassigned_precincts)
 
-    # ALTERNATIVE GERRYMANDERING METHOD: Evaluating Random Ensemble
-    # def gerrymander(self):
-    #     if self.print: print(f'Gerrymandering in favor of {self.control}...')
-    #     # Generate ensemble
-    #     plans_list, district_data = generate_ensemble(self)
-    #     # Select plan with maximum partisan gain for party in control (or random in case of tie)
-    #     best_plan = find_best_plan(self, district_data) 
-    #     # Update the model with the best plan
-    #     reassigned_precincts = redistrict(self, plans_list, best_plan)
-    #     # Update precinct to congdist mapping
-    #     update_mapping(self, reassigned_precincts)
-
     def step(self):
         self.steps += 1
         if self.print: print(f'Model step {self.steps}...')
-        
-        # Gerrymander
+
+        # 1. Gerrymander
         if self.gerrymandering: 
             self.gerrymander()
         
-        # Sort agents
+        # 2. Sort agents
         if self.sorting:
             self.self_sort()
         
-        # Update majorities (Election)
+        # 3. Update majorities (Election)
         self.update_majorities([self.precincts, self.counties, self.congdists])
         # Update utility of all agents
         self.update_utilities()
@@ -137,13 +123,14 @@ class GerrySort(mesa.Model):
         # Print statistics
         if self.print: print_statistics(self)
         if self.save_plans:
-            # Filename format: state_simulationid_stepnumber
-            filename = f'results/plans/{self.simulation_id}_{self.state}_{self.control_rule}_{self.control}_{self.steps}.geojson'
+            filename = f'results/plans/{self.state}_{self.simulation_id}_{self.steps}.geojson'
             save_current_map(self, filename=filename)
+        
+        # Check if the model should stop
         if self.steps >= self.max_iters:
             self.running = False
             if self.print: 
-                print(f'Model converged! (steps={self.steps})')
+                print(f'Simulation done! (steps={self.steps})')
                 print('------------------------------------')
         else:
             # The party in control is the projected winner

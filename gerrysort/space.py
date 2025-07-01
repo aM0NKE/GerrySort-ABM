@@ -77,7 +77,6 @@ class ElectoralDistricts(mg.GeoSpace):
         # Update electoral district attributes
         new_congdist_id = self.precinct_congdist_map[new_precinct_id]
         congdist = self.get_congdist_by_id(new_congdist_id)
-
         congdist.num_people += 1
         if person.color == 'Red':
             congdist.rep_cnt += 1

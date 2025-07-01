@@ -170,4 +170,4 @@ runMPI/
 
 # Files
 *.DS_Store
-gerrysort/utils/randomredistricting.py
+*randomredistricting.py

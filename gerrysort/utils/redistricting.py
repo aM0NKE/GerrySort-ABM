@@ -224,7 +224,6 @@ def update_mapping(model, reassigned_precincts):
         # Update precinct lists and district totals
         old_congdist.precincts.remove(precinct_id)
         new_congdist.precincts.append(precinct_id)
-
         for attr in ['rep_cnt', 'dem_cnt', 'num_people']:
             value = getattr(precinct, attr)
             setattr(old_congdist, attr, getattr(old_congdist, attr) - value)

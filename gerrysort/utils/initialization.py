@@ -65,27 +65,21 @@ def setup_datacollector(model):
          'happydems': 'happydems',
          'avg_utility': 'avg_utility',
          'total_moves': 'total_moves',
-
          'rep_congdist_seats': 'rep_congdist_seats',
          'dem_congdist_seats': 'dem_congdist_seats',
          'tied_congdist_seats': 'tied_congdist_seats',
-
          'avg_county_segregation': 'avg_county_segregation',
          'avg_congdist_segregation': 'avg_congdist_segregation',
-
          'min_competitiveness': 'min_competitiveness',
          'avg_competitiveness': 'avg_competitiveness',
          'max_competitiveness': 'max_competitiveness',
          'competitive_seats': 'competitive_seats',
-
          'min_compactness': 'min_compactness',
          'avg_compactness': 'avg_compactness',
          'max_compactness': 'max_compactness',
-
          'efficiency_gap': 'efficiency_gap',
          'mean_median': 'mean_median',
          'declination': 'declination',
-
          'map_score': 'map_score',
          'predicted_seats': 'predicted_seats',
          'projected_winner': 'projected_winner',
@@ -179,7 +173,7 @@ def create_population(model):
                 unique_id=uuid.uuid4().int,
                 model=model,
                 crs=model.space.crs,
-                geometry=random_precinct.random_point(), # Random point in precinct (strictly for visualization puroses)
+                geometry=random_precinct.random_point(), # Random point in precinct (strictly for visualization purposes)
                 is_red=rep_v_dem_ratio > random.random(),
                 precinct_id=random_precinct.unique_id,
                 county_id=model.space.precinct_county_map[random_precinct.unique_id],

@@ -73,7 +73,6 @@ class GeoAgent(mg.GeoAgent):
     def competitiveness(self):
         return 1 - (abs(self.dem_cnt - self.rep_cnt) / self.num_people)
     
-    # SOURCE: https://cloud.r-project.org/web/packages/redistmetrics/vignettes/compactness.html
     def polsby_popper(self):
         return 4 * np.pi * (self.geometry.area / (self.geometry.length ** 2 + 1e-9))
     
