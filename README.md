@@ -22,13 +22,14 @@ A spatial agent-based model (ABM) for simulating and analyzing the relationship 
 ## Repository Structure 
 <pre lang="markdown">
 <code>GerrySort-ABM/ 
-    ├── data/                  # Input data: shapefiles, election results, RUCA codes
-    ├── gerrysort/             # Core agent-based model code
-    ├── run_console.py         # Script to run simulations via command line
-    ├── run_visualization.py   # Script to run the interactive visual interface
-    ├── requirements.txt       # Python dependencies
-    ├── LICENSE                # License information
-    └── README.md              # Project documentation
+    ├── data/                     # Input data: shapefiles, election results, RUCA codes
+    ├── gerrysort/                # Core agent-based model code
+    ├── run_console.py            # Script to run simulations via command line
+    ├── run_visualization.py      # Script to run the interactive visual interface
+    ├── CLSThesis_GerrySort.pdf   # Thesis report
+    ├── requirements.txt          # Python dependencies
+    ├── LICENSE                   # License information
+    └── README.md                 # Project documentation
 </code></pre>
 
 ## Installation  
@@ -40,7 +41,7 @@ A spatial agent-based model (ABM) for simulating and analyzing the relationship 
 
 2. **Install dependencies**
     ```bash
-    pip3 install -r requirements.txt
+    conda env create -f environment.yml
     ```
 
 ## Usage Options  
