@@ -27,9 +27,7 @@ A spatial agent-based model (ABM) for simulating and analyzing the relationship 
     ├── run_console.py            # Script to run simulations via command line
     ├── run_visualization.py      # Script to run the interactive visual interface
     ├── CLSThesis_GerrySort.pdf   # Thesis report
-    ├── requirements.txt          # Python dependencies
-    ├── LICENSE                   # License information
-    └── README.md                 # Project documentation
+    └── environment.yml           # Conda environment
 </code></pre>
 
 ## Installation  
