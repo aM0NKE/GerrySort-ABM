@@ -65,4 +65,4 @@ This project is licensed under the MIT License. See the LICENSE file for details
 ## Acknowledgments
 - Precinct shapefiles, congressional maps, and election data: [Districtr (MGGG Redistricting Lab)](https://districtr.org)
 - RUCA codes: [U.S. Department of Agriculture](https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes)
-- County demographic data: [Index Mundi](https://www.indexmundi.com/facts/united-states/quick-facts/all-states/)
+- County-level demographic data: [Index Mundi](https://www.indexmundi.com/facts/united-states/quick-facts/all-states/)
