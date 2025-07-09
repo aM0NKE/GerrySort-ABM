@@ -1,21 +1,23 @@
 # GerrySort
 A spatial agent-based model (ABM) for simulating and analyzing the relationship between partisan gerrymandering and geographical partisan sorting in U.S. congressional redistricting.
 
+![This is an alt text.](/thesis/interface.png "Example simulation in interface.")
+
 ## Overview  
 **GerrySort** is a novel agent-based model designed to explore how voters' residential preferences and redistricting strategies affect the fairness of congressional district maps. It enables researchers to simulate partisan sorting, gerrymandering, and redistricting reform across diverse political geographies using real-world electoral and demographic data.
 
 ## Features  
-- Simulates **partisan sorting** based on voter utility and tolerance  
-- Implements multiple **redistricting control scenarios** (fixed partisan, model-determined, fairness-driven)   
-- Supports **reform criteria**: compactness and competitiveness  
-- Integrates **precinct-level election data** and **county-level demographics**  
-- Computes metrics for **partisan fairness**, **competitiveness**, **compactness**, and **segregation**  
+* Simulates **partisan sorting** based on voter utility and tolerance  
+* Implements multiple **redistricting control scenarios** (fixed partisan, model-determined, fairness-driven)   
+* Supports **reform criteria**: compactness and competitiveness  
+* Integrates **precinct-level election data** and **county-level demographics**  
+* Computes metrics for **partisan fairness**, **competitiveness**, **compactness**, and **segregation**  
 
 ## Use Cases  
-- Evaluate how partisan sorting affects gerrymandering outcomes  
-- Generate congressional district maps under different political control scenarios 
-- Assess the effectiveness of redistricting reforms under different political geographies  
-- Measure partisan segregation using spatial statistics (e.g., Moran’s I)  
+* Evaluate how partisan sorting affects gerrymandering outcomes  
+* Generate congressional district maps under different political control scenarios 
+* Assess the effectiveness of redistricting reforms under different political geographies  
+* Measure partisan segregation using spatial statistics (e.g., Moran’s I)  
 
 ---
 
@@ -32,24 +34,24 @@ A spatial agent-based model (ABM) for simulating and analyzing the relationship 
 
 ## Installation  
 1. **Clone the repository**
-   ```bash
+   ```
    git clone https://github.com/aM0NKE/GerrySort-ABM.git
    cd GerrySort-ABM
    ```
 
 2. **Install dependencies**
-    ```bash
+    ```
     conda env create -f environment.yml
     ```
 
 ## Usage Options  
-1. To run a simulation in your console:
-    ```bash
+* **To run a simulation in your console:**
+    ```
     python3 run_console.py
     ```
 
-2. To run the interactive visual simulation interface:
-    ```bash
+* **To run the interactive simulation interface:**
+    ```
     python3 run_visualization.py
     ```
 ---
@@ -62,6 +64,6 @@ If you use this model in your research, please cite:
 This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Acknowledgments
-- Precinct shapefiles, congressional maps, and election data: [Districtr (MGGG Redistricting Lab)](https://districtr.org)
-- RUCA codes: [U.S. Department of Agriculture](https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes)
-- County-level demographic data: [Index Mundi](https://www.indexmundi.com/facts/united-states/quick-facts/all-states/)
+* Precinct shapefiles, congressional maps, and election data: [Districtr (MGGG Redistricting Lab)](https://districtr.org)
+* RUCA codes: [U.S. Department of Agriculture](https://www.ers.usda.gov/data-products/rural-urban-commuting-area-codes)
+* County-level demographic data: [Index Mundi](https://www.indexmundi.com/facts/united-states/quick-facts/all-states/)

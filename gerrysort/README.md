@@ -1,4 +1,4 @@
-# GerrySort Model Structure 
+# Model Structure 
 <pre lang="markdown">
 <code>gerrysort/ 
     ├── agents/                 # Definitions for model agents

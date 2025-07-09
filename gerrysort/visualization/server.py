@@ -22,17 +22,17 @@ class ControlElement(mesa.visualization.TextElement):
         return f"Control: {model.control} | Control Margin: {model.projected_margin}"
 
 model_params = {
-    "save_plans": mesa.visualization.Checkbox("Save Plans", True),
+    "save_plans": mesa.visualization.Checkbox("Save Plans", False),
     "print_output": mesa.visualization.Checkbox("Print Output", True),
     "vis_level": mesa.visualization.Choice("Visualization Level", value="CONGDIST", choices=["CONGDIST", "COUNTY", "PRECINCT"]),
-    "state": mesa.visualization.Choice("State", value="PA", choices=["MN", "WI", "MI", "PA", "GA", "TX"]),
+    "state": mesa.visualization.Choice("State", value="GA", choices=["MN", "WI", "MI", "PA", "GA", "TX"]),
     "election": mesa.visualization.Choice("Election", value="PRES20", choices=["PRES20", "PRES16", "PRES12"]),
     "sorting": mesa.visualization.Checkbox("Self Sorting", True),
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
-    "control_rule": mesa.visualization.Choice("Control Rule", value="FIXED", choices=["CONGDIST", "FIXED"]),
-    "initial_control": mesa.visualization.Choice("Initial Control", value="Democrats", choices=["Model", "Democrats", "Republicans", "Fair"]),
+    "control_rule": mesa.visualization.Choice("Control Rule", value="CONGDIST", choices=["CONGDIST", "FIXED"]),
+    "initial_control": mesa.visualization.Choice("Initial Control", value="Model", choices=["Model", "Democrats", "Republicans", "Fair"]),
     "max_iters": mesa.visualization.Slider("Max Iterations", 4, 1, 10, 1),
-    "npop": mesa.visualization.Slider("Number of Agents", 13000, 1000, 30500, 100),
+    "npop": mesa.visualization.Slider("Number of Agents", 10700, 1000, 30500, 100),
     "tolerance": mesa.visualization.Slider("Tolerance Threshold", 0.50, 0.00, 1.00, 0.05),
     "beta": mesa.visualization.Slider("Beta (Temp. Sorting)", 100.0, 0.0, 100.0, 5),
     "ensemble_size": mesa.visualization.Slider("Number of Proposed Maps", 250, 50, 1000, 50),
