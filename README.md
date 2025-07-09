@@ -1,10 +1,9 @@
 # GerrySort
-A spatial agent-based model (ABM) for simulating and analyzing the relationship between partisan gerrymandering and geographical partisan sorting in U.S. congressional redistricting.
+**GerrySort** is a novel agent-based model (ABM) for simulating and analyzing the relationship between partisan gerrymandering and geographical partisan sorting in U.S. congressional redistricting. The model is designed to explore how voters' residential preferences and redistricting strategies affect the fairness of congressional district maps. It enables researchers to simulate partisan sorting, gerrymandering, and redistricting reform across different states with diverse political geographies using real-world electoral and demographic data.
 
-![This is an alt text.](/thesis/interface.png "Example simulation in interface.")
-
-## Overview  
-**GerrySort** is a novel agent-based model designed to explore how voters' residential preferences and redistricting strategies affect the fairness of congressional district maps. It enables researchers to simulate partisan sorting, gerrymandering, and redistricting reform across diverse political geographies using real-world electoral and demographic data.
+<p align="center">
+  <img src="/thesis/interface.png" alt="Example simulation in interface." title="Example simulation in interface." style="width:75%;">
+</p>
 
 ## Features  
 * Simulates **partisan sorting** based on voter utility and tolerance  
@@ -26,6 +25,7 @@ A spatial agent-based model (ABM) for simulating and analyzing the relationship 
 <code>GerrySort-ABM/ 
     ├── data/                     # Input data: shapefiles, election results, RUCA codes
     ├── gerrysort/                # Core agent-based model code
+    ├── thesis/                   # Thesis report and slides
     ├── run_console.py            # Script to run simulations via command line
     ├── run_visualization.py      # Script to run the interactive visual interface
     ├── CLSThesis_GerrySort.pdf   # Thesis report
@@ -54,6 +54,7 @@ A spatial agent-based model (ABM) for simulating and analyzing the relationship 
     ```
     python3 run_visualization.py
     ```
+
 ---
 
 ## Citation
