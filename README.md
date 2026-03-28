@@ -2,7 +2,7 @@
 **GerrySort** is a novel agent-based model (ABM) for simulating and analyzing the relationship between partisan gerrymandering and geographical partisan sorting in U.S. congressional redistricting. The model is designed to explore how voters' residential preferences and redistricting strategies affect the fairness of congressional district maps. It enables researchers to simulate partisan sorting, gerrymandering, and redistricting reform across different states with diverse political geographies using real-world electoral and demographic data.
 
 <p align="center">
-  <img src="/thesis/interface.png" alt="Example simulation in interface." title="Example simulation in interface." style="width:75%;">
+  <img src="./interface.png" alt="Example simulation in interface." title="Example simulation in interface." style="width:75%;">
 </p>
 
 ## Features  

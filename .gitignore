@@ -167,6 +167,7 @@ results/
 archive/
 *__MACOSX/
 runMPI/
+_thesis/
 
 # Files
 *.DS_Store
