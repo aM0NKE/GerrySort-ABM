@@ -59,7 +59,7 @@
 
 ## Citation
 If you use this model in your research, please cite:
-> Vaudrin, R. (2025). GerrySort: An Agent-Based Model for Simulating Gerrymandering and Geographical Partisan Sorting. Master’s Thesis, University of Amsterdam.
+> Vaudrin, R., Tang, T., Lees, M.H. (2026). GerrySort: An Agent-Based Model for Simulating Gerrymandering and Geographical Partisan Sorting. 
 
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
