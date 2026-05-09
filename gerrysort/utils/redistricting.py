@@ -112,22 +112,20 @@ def setup_gerrychain(model):
         else: # Fair Gerrymandering
             model.opt_metric = lambda x: (abs((sum([1 for node in x.parts if x["NDEMS"][node] > x["NREPS"][node]]) / len(x)) - (model.ndems / (model.ndems + model.nreps)))) + np.random.normal(0,  model.sigma)
     
-    if model.control == "Fair" and model.intervention == "None":
-        maximize = False # Minimize the difference between the number of Democrats and Republicans
-    else:
-        maximize = True
+    # In case of Fair control with no intervention, we want to minimize the difference between the percentage of seats won and the percentage of votes won, so we set maximize to False. In all other cases, we want to maximize the metric.
+    model.maximize = False if model.control == "Fair" and model.intervention == "None" else True
 
     model.map_generator = SingleMetricOptimizer(
         initial_state=initial_partition,
         proposal=proposal,
         constraints=state_constraints,
         optimization_metric=model.opt_metric,
-        maximize=maximize,
+        maximize=model.maximize,
     )
 
 def find_best_plan(model):
     setup_gerrychain(model)
-    best_score = -1
+    best_score = -float('inf') if model.maximize else float('inf')
     best_step = 0 # Keep track at which step the best plan was found
     change_cnt = 0
     for i, part in enumerate(model.map_generator.tilted_run(model.ensemble_size, 0.1, with_progress_bar=model.print)):
@@ -135,7 +133,7 @@ def find_best_plan(model):
     # for i, part in enumerate(model.map_generator.short_bursts(10, 100, with_progress_bar=True)):
     # for i, part in enumerate(model.map_generator.simulated_annealing(model.ensemble_size, model.map_generator.jumpcycle_beta_function(200, 800), beta_magnitude=1, with_progress_bar=True)):
         new_score = model.opt_metric(part)
-        if new_score > best_score:
+        if (new_score > best_score) if model.maximize else (new_score < best_score):
             best_score = new_score
             if model.control == "Fair":
                 model.predicted_seats = 0
@@ -146,10 +144,10 @@ def find_best_plan(model):
             if model.print: print(f'Found new best plan at step {i} with a score of {best_score} and {model.predicted_seats} seats in favor of {model.control}')
             best_step = i
             change_cnt += 1
+    model.map_score = best_score
     if model.print: print(f'The {model.control} have found the best plan at step {best_step} with a score of {model.map_score} after {change_cnt} changes')
     model.current_map['NEW_CONGDIST'] = model.map_generator.best_part.assignment
     model.current_map['NEW_CONGDIST'] = model.current_map['NEW_CONGDIST'].apply(lambda x: str(int(x) + 1).zfill(2))
-    model.map_score = best_score
 
 def mapping_congdist_ids(model):
     # Dissolve geometries by CONGDIST and NEW_CONGDIST, converting to EPSG:4326 in one step

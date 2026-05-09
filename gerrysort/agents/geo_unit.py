@@ -71,11 +71,18 @@ class GeoAgent(mg.GeoAgent):
         return rep_wasted_votes, dem_wasted_votes
     
     def competitiveness(self):
-        return 1 - (abs(self.dem_cnt - self.rep_cnt) / self.num_people)
+        total_votes = self.rep_cnt + self.dem_cnt
+        return 1 - (abs(self.dem_cnt - self.rep_cnt) / (total_votes + 1e-9))
     
     def polsby_popper(self):
         return 4 * np.pi * (self.geometry.area / (self.geometry.length ** 2 + 1e-9))
     
     def schwartzberg(self):
-        return 1 / (self.geometry.length / (2 * np.pi * np.sqrt(self.geometry.area / np.pi)))
+        circle_perimiter = 2 * np.pi * np.sqrt(self.geometry.area + 1e-9 / np.pi)
+        return circle_perimiter / (self.geometry.length + 1e-9)
+    
+    def reock(self):
+        min_bounding_circle = self.geometry.minimum_rotated_rectangle
+        circle_area = min_bounding_circle.area
+        return self.geometry.area / (circle_area + 1e-9)
 

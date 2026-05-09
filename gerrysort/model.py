@@ -6,19 +6,19 @@ from .utils.redistricting import *
 import mesa
 
 class GerrySort(mesa.Model):
-    def __init__(self, state='GA', print_output=False, save_plans=False, vis_level=None, data=None, election='PRES20', 
+    def __init__(self, state='GA', print_output=False, save_plans=False, vis_agents=False, vis_level=None, data=None, election='PRES20', 
                  max_iters=4, npop=11000, sorting=True, gerrymandering=True, 
-                 control_rule='CONGDIST', initial_control='Model', tolerance=0.5, beta=100.0,
+                 control_rule='CONGDIST', initial_control='Dynamic', tolerance=0.5, beta=100.0,
                  ensemble_size=250, epsilon=0.01, sigma=0.01,
                  n_moving_options=10, distance_decay=0.0, capacity_mul=1.0, 
                  intervention='None', intervention_weight=0.0):
         self.simulation_id = str(uuid.uuid4())[:8]  # Unique simulation ID
         self.state = state
-        # Set up the scheduler and space
-        self.schedule = mesa.time.RandomActivation(self)
+        # Set up the space
         self.space = ElectoralDistricts()
         self.print = print_output
         self.save_plans = save_plans
+        self.space.vis_agents = vis_agents
         self.space.vis_level = vis_level
         self.steps = 0
         self.running = True
@@ -63,7 +63,7 @@ class GerrySort(mesa.Model):
                                             pop_deviation, unhappy_happy, avg_utility, segregation,
                                             congdist_seats, projected_winner, projected_margin])
         # Ininitialize party controlling the state based on initial plan
-        if initial_control == 'Model':
+        if initial_control == 'Dynamic':
             self.control = self.projected_winner
         elif initial_control in ['Democrats', 'Republicans', 'Fair']:
             self.control = initial_control

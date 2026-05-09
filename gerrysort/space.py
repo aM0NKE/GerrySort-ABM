@@ -91,7 +91,7 @@ class ElectoralDistricts(mg.GeoSpace):
         else:
             person.geometry = precinct.random_point()
         # Add agent to map
-        super().add_agents(person)
+        if self.vis_agents: super().add_agents(person)
 
     def remove_person_from_space(self, person):
         # Update precinct attributes
@@ -123,7 +123,7 @@ class ElectoralDistricts(mg.GeoSpace):
         person.district_id = None
         person.geometry = None
         # Remove agent to map
-        super().remove_agent(person)
+        if self.vis_agents: super().remove_agent(person)
 
     def get_random_person_id(self) -> str:
         return random.choice(list(self.id_person_map.keys()))

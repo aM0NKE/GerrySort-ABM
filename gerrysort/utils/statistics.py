@@ -62,7 +62,8 @@ def segregation(model):
 def compactness(model, formula='polsby_popper'):
     score_method = {
         'polsby_popper': lambda dist: dist.polsby_popper(),
-        'schwartzberg': lambda dist: dist.schwartzberg()
+        'schwartzberg': lambda dist: dist.schwartzberg(),
+        'reock': lambda dist: dist.reock()
     }
     compactness_scores = [score_method[formula](dist) for dist in model.congdists]
     for dist, score in zip(model.congdists, compactness_scores):
@@ -74,8 +75,9 @@ def compactness(model, formula='polsby_popper'):
 def competitiveness(model, competitive_threshold=0.10):
     competitiveness_scores = [dist.competitiveness() for dist in model.congdists]
     for dist, score in zip(model.congdists, competitiveness_scores):
-        dist.competitive = score < competitive_threshold
+        dist.competitive = (1 - score) < competitive_threshold
         dist.competitiveness_score = score
+        print(f'District {dist.unique_id} competitiveness score: {score}, competitive: {dist.competitive}')
     model.min_competitiveness = min(competitiveness_scores)
     model.avg_competitiveness = np.mean(competitiveness_scores)
     model.max_competitiveness = max(competitiveness_scores)

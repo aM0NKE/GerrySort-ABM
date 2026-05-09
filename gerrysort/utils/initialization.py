@@ -180,7 +180,6 @@ def create_population(model):
                 congdist_id=model.space.precinct_congdist_map[random_precinct.unique_id]
             )
             model.space.add_person_to_space(person, new_precinct_id=random_precinct_id)
-            model.schedule.add(person)
             model.population.append(person)
             # Update party counts
             if person.color == 'Red':
