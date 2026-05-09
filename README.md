@@ -39,18 +39,19 @@
 
 2. **Install dependencies**
     ```
-    conda env create -f environment.yml
+    uv venv
+    uv sync
     ```
 
 ## Usage Options  
 * **To run a simulation in your console:**
     ```
-    python3 run_console.py
+    uv run run_console.py
     ```
 
 * **To run the interactive simulation interface:**
     ```
-    python3 run_visualization.py
+    uv run run_visualization.py
     ```
 
 ---
