@@ -60,7 +60,7 @@ params = {
     'sorting': True,
     'gerrymandering': True,
     'control_rule': 'CONGDIST',
-    'initial_control': 'Model',
+    'initial_control': 'Dynamic',
     'tolerance': 0.5,
     'beta': 100.0,
     'ensemble_size': 250,
