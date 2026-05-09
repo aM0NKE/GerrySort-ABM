@@ -25,10 +25,8 @@
 <code>GerrySort-ABM/ 
     ├── data/                     # Input data: shapefiles, election results, RUCA codes
     ├── gerrysort/                # Core agent-based model code
-    ├── thesis/                   # Thesis report and slides
     ├── run_console.py            # Script to run simulations via command line
     ├── run_visualization.py      # Script to run the interactive visual interface
-    ├── CLSThesis_GerrySort.pdf   # Thesis report
     └── environment.yml           # Conda environment
 </code></pre>
 

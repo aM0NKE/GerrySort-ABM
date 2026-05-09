@@ -1,0 +1,12 @@
+[project]
+name = "gerrysort-abm"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "geopandas>=1.1.3",
+    "gerrychain>=0.3.2",
+    "mesa==2.1.5",
+    "mesa-geo==0.7.1",
+]
