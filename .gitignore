@@ -163,11 +163,10 @@ cython_debug/
 # Folders
 .idea/
 testing/
-data2/
+data/
 results/
 archive/
 *__MACOSX/
-runMPI/
 _thesis/
 
 # Files
