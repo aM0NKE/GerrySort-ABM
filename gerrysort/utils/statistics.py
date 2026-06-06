@@ -77,7 +77,6 @@ def competitiveness(model, competitive_threshold=0.10):
     for dist, score in zip(model.congdists, competitiveness_scores):
         dist.competitive = (1 - score) < competitive_threshold
         dist.competitiveness_score = score
-        print(f'District {dist.unique_id} competitiveness score: {score}, competitive: {dist.competitive}')
     model.min_competitiveness = min(competitiveness_scores)
     model.avg_competitiveness = np.mean(competitiveness_scores)
     model.max_competitiveness = max(competitiveness_scores)

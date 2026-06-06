@@ -7,7 +7,7 @@ import mesa
 
 class GerrySort(mesa.Model):
     def __init__(self, state='GA', print_output=False, save_plans=False, vis_agents=False, vis_level=None, data=None, election='PRES20', 
-                 max_iters=4, npop=11000, sorting=True, gerrymandering=True, 
+                 max_steps=4, npop=11000, sorting=True, gerrymandering=True, 
                  control_rule='CONGDIST', initial_control='Dynamic', tolerance=0.5, beta=100.0,
                  ensemble_size=250, epsilon=0.01, sigma=0.01,
                  n_moving_options=10, distance_decay=0.0, capacity_mul=1.0, 
@@ -24,7 +24,7 @@ class GerrySort(mesa.Model):
         self.running = True
         # Set model parameters
         self.election = election
-        self.max_iters = max_iters
+        self.max_steps = max_steps
         self.npop = npop
         self.sorting = sorting
         self.gerrymandering = gerrymandering
@@ -127,7 +127,7 @@ class GerrySort(mesa.Model):
             save_current_map(self, filename=filename)
         
         # Check if the model should stop
-        if self.steps >= self.max_iters:
+        if self.steps >= self.max_steps:
             self.running = False
             if self.print: 
                 print(f'Simulation done! (steps={self.steps})')

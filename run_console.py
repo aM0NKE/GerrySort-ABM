@@ -14,7 +14,7 @@ def gerrysort_model(state, params, data, save=False):
     print_output = True
     vis_level = None
     election = 'PRES20'
-    max_iters = 4
+    max_steps = 4
     epsilon = 0.01
 
     # Extract parameter values
@@ -27,7 +27,7 @@ def gerrysort_model(state, params, data, save=False):
         vis_level=vis_level,
         data=data,
         election=election,
-        max_iters=int(max_iters),
+        max_steps=int(max_steps),
         npop=int(npop),
         sorting=bool(params_values[0]),
         gerrymandering=bool(params_values[1]),

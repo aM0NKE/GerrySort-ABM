@@ -7,7 +7,7 @@ import mesa
 
 class ModelParamsElement(mesa.visualization.TextElement):
     def render(self, model):
-        return f"Self Sorting: {model.sorting} | Gerrymandering: {model.gerrymandering} | Max Iters: {model.max_iters} | Tolerance Threshold: {model.tolerance} | Beta: {model.beta} | Ensemble Size: {model.ensemble_size} | Sigma: {model.sigma} | Epsilon: {model.epsilon} | Number of Moving Options: {model.n_moving_options} | Distance Decay: {model.distance_decay} | Capacity Multiplier: {model.capacity_mul}"
+        return f"Self Sorting: {model.sorting} | Gerrymandering: {model.gerrymandering} | Max Iters: {model.max_steps} | Tolerance Threshold: {model.tolerance} | Beta: {model.beta} | Ensemble Size: {model.ensemble_size} | Sigma: {model.sigma} | Epsilon: {model.epsilon} | Number of Moving Options: {model.n_moving_options} | Distance Decay: {model.distance_decay} | Capacity Multiplier: {model.capacity_mul}"
 
 class DemographicsElement(mesa.visualization.TextElement):
     def render(self, model):
@@ -32,7 +32,7 @@ model_params = {
     "gerrymandering": mesa.visualization.Checkbox("Gerrymandering", True),
     "control_rule": mesa.visualization.Choice("Control Rule", value="CONGDIST", choices=["CONGDIST", "FIXED"]),
     "initial_control": mesa.visualization.Choice("Initial Control", value="Dynamic", choices=["Dynamic", "Democrats", "Republicans", "Fair"]),
-    "max_iters": mesa.visualization.Slider("Max. Model Steps", 4, 1, 10, 1),
+    "max_steps": mesa.visualization.Slider("Max. Model Steps", 4, 1, 10, 1),
     "npop": mesa.visualization.Slider("Number of Agents", 10700, 1000, 30500, 100),
     "tolerance": mesa.visualization.Slider("Agent Tolerance Threshold", 0.50, 0.00, 1.00, 0.05),
     "beta": mesa.visualization.Slider("Beta (Temp. Sorting)", 100.0, 0.0, 100.0, 5),
