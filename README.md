@@ -38,8 +38,7 @@ GerrySort was developed to study these two processes together. It provides a com
     ├── gerrysort/                # Core agent-based model code
     ├── runMPI_experiments/       # Scripts for distributed execution of experiments using MPI
     ├── run_console.py            # Script to run simulations via command line
-    ├── run_visualization.py      # Script to run the interactive visual interface
-    └── environment.yml           # Conda environment
+    └── run_visualization.py      # Script to run the interactive visual interface
 </code></pre>
 
 ## Installation  
