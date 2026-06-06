@@ -1,6 +1,6 @@
 # GerrySort
 
-**GerrySort** is an empirical agent-based model (ABM) for simulating gerrymandering and geographical partisan sorting in U.S. congressional elections. By modeling redistricting strategies (such as gerrymandering) alongside voters' residential preferences and relocation behaviors, GerrySort aims to investigate how these factors collectively shape congressional district maps across different states with diverse political geographies using real-world electoral and demographic data.
+**GerrySort** is an agent-based model (ABM) for studying the interaction between partisan gerrymandering and geographical partisan sorting in U.S. congressional elections. By combining redistricting processes with voter relocation dynamics, the model enables researchers to investigate how electoral maps and the spatial distribution of voters jointly shape partisan fairness, competitiveness, and compactness across states with different political geographies. The model is calibrated using real-world electoral, demographic, and geographic data, allowing simulations to reflect the unique political landscapes of individual states.
 
 <div align="center">
   <img src="./interface.png" width="500" alt="Example simulation in interface.">
@@ -9,19 +9,25 @@
 </div>
 
 ## Why GerrySort?
-Gerrymandering is a classic topic for both scholars and the public. The strange-looking boundaries are often associated with partisan unfairness, uncompetitive elections, and maps of low compactness. However, evaluating the real-life impact of gerrymandering—or more generally, redistricting strategies—requires more than just analyzing gerrymandering itself with static maps; it requires taking into account how voters react to the new map over time. When voters are unhappy with the redistricting, they may relocate, thereby canceling out the impact of gerrymandering. This process is called **partisan sorting**. **GerrySort** is an empirically calibrated agent-based model that allows users to explore the complex interplay between gerrymandering and partisan sorting, as well as their collective impacts on the district map. It has the following features and usages:
+Research on gerrymandering has traditionally focused on electoral maps as static objects. However, the spatial distribution of voters is not fixed. Individuals often prefer to live in communities populated by people with similar political views, contributing to a process known as **geographical partisan sorting**. Over time, this can alter the political geography of a state and influence the effectiveness of both gerrymandering and redistricting reforms.
+
+GerrySort was developed to study these two processes together. It provides a computational framework for exploring how partisan sorting and redistricting interact, whether they amplify or offset one another, and how their effects vary across different political and geographic contexts.
 
 ## Features:
-* Integrates **gerrymandering** and **partisan sorting** into one ABM
-* Calibrates the ABM using real-world **precinct-level election data** and **county-level demographics**
-* Implements multiple **redistricting scenarios**, including fixed control, model-determined control, and fairness-maximizing redistricting
-* Analyzes maps and evaluates redistricting reforms using multiple metrics for partisan fairness, compactness, competitiveness, and segregation
+* Integrates **partisan gerrymandering** and **geographical partisan sorting** within a single agent-based model
+* Calibrated using real-world **precinct-level election results**, **county-level demographic data**, and **geographic information**
+* Implements multiple **redistricting control scenarios**, including fixed partisan, dynamic electoral, and fairness-maximizing control
+* Supports the evaluation of **redistricting reforms**, including competitiveness and compactness criteria
+* Measures electoral outcomes using metrics of **partisan fairness**, **competitiveness**, **compactness**, and **spatial segregation**
+* Generates congressional district maps while maintaining population balance and district contiguity
 
 ## Use Cases:
-* Evaluate how partisan sorting affects gerrymandering outcomes and vice versa
-* Generate congressional district maps under different political control scenarios using advanced algorithms
-* Assess the effectiveness of redistricting reforms under different political geographies in multiple U.S. states
-* Measure partisan segregation of the maps using spatial statistics (e.g., Moran’s I)
+* Study how partisan sorting influences the effectiveness of gerrymandering
+* Compare partisan fairness across alternative district plans and control scenarios
+* Analyze spatial polarization and segregation using measures such as Moran's I
+* Investigate how geographic voter distributions create structural partisan advantages or disadvantages
+* Evaluate the effectiveness of redistricting reforms under different political geographies
+
 
 ---
 
